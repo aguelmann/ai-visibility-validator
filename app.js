@@ -411,7 +411,7 @@ async function checkAIVisibility() {
 
   try {
     // Get URL from input field
-    const currentUrl = urlInput.value.trim();
+    let currentUrl = urlInput.value.trim();
 
     // Validate URL
     if (!currentUrl) {
@@ -419,10 +419,16 @@ async function checkAIVisibility() {
       return;
     }
 
+    // Add https:// if no protocol specified
+    if (!currentUrl.match(/^https?:\/\//i)) {
+      currentUrl = 'https://' + currentUrl;
+      urlInput.value = currentUrl; // Update input field with full URL
+    }
+
     try {
       new URL(currentUrl); // Validate URL format
     } catch (error) {
-      showError('Please enter a valid URL (e.g., https://example.com)');
+      showError('Please enter a valid URL (e.g., example.com or https://example.com)');
       return;
     }
 

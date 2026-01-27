@@ -757,8 +757,19 @@ p {
     gap: 40px;
   }
 
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* On mobile: title and subtitle first, then input moves after */
+  .hero-input-section {
+    order: 2;
+  }
+
+  /* Metrics come last */
   .hero-visual {
-    order: -1;
+    order: 3;
   }
 
   .problem-grid,
