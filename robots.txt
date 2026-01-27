@@ -8,7 +8,7 @@ Allow: /
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://ai-visibility-validator.vercel.app/sitemap.xml
 
 # AI Bot specific (welcome them!)
 User-agent: GPTBot
