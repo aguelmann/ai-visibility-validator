@@ -210,7 +210,7 @@ Folder to IGNORE:
 Your Cloud Function is already deployed and working. Current configuration:
 
 **File: cloud-function/index.js**
-- API Key: AIzaSyCF2TCPZ60Izuy3_OcPdoZSeAfmgaQEKXE
+- API Key: [CONFIGURED IN CLOUD FUNCTION - DO NOT COMMIT]
 - Endpoint: getCruxData
 - CORS: Enabled for all origins (*)
 
