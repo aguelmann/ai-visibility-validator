@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI & LLM Visibility Validator - Is Your Website Fast Enough for AI Search Engines?</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Check if your website is fast enough for AI search engines like ChatGPT, Claude, and Perplexity. Free tool to validate TTFB, CLS, and INP metrics for optimal AI visibility and Generative Engine Optimization (GEO).">
+  <meta name="keywords" content="AI visibility, GEO, Generative Engine Optimization, AI SEO, ChatGPT visibility, Claude AI, Perplexity SEO, RAG systems, Core Web Vitals, TTFB, CLS, INP, Chrome UX Report, AI search engines, LLM visibility">
+  <meta name="author" content="Andre Guelmann">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yourdomain.com/">
+  <meta property="og:title" content="AI & LLM Visibility Validator - Is Your Website Fast Enough for AI?">
+  <meta property="og:description" content="Free tool to check if your website is visible to AI search engines like ChatGPT, Claude, and Perplexity. Validate your TTFB, CLS, and INP instantly.">
+  <meta property="og:image" content="/icons/icon128.png">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://yourdomain.com/">
+  <meta name="twitter:title" content="AI & LLM Visibility Validator - Is Your Website Fast Enough for AI?">
+  <meta name="twitter:description" content="Free tool to check if your website is visible to ChatGPT, Claude, and Perplexity.">
+  <meta name="twitter:image" content="/icons/icon128.png">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://yourdomain.com/">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="landing.css">
+
+  <!-- Schema.org markup -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "AI & LLM Visibility Validator",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Any",
+    "description": "Check if your website is fast enough for AI search engines. Free tool to validate TTFB, CLS, and INP metrics for optimal AI visibility.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Andre Guelmann",
+      "url": "https://andrglmn.me"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="48" rx="10" fill="#E8EAEB"/>
+          <path d="M28 8L18 26H24L20 40L34 20H27L32 8H28Z" fill="#F5C638"/>
+          <text x="8" y="34" font-family="Montserrat, sans-serif" font-size="18" font-weight="700" fill="#25995C">A</text>
+          <text x="20" y="34" font-family="Montserrat, sans-serif" font-size="18" font-weight="700" fill="#25995C">I</text>
+        </svg>
+        <span class="logo-text">AI & LLM Visibility Validator</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#about">About</a>
+        <a href="tool.html" class="cta-nav">Try Free Tool</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          Is Your Website <span class="highlight">Invisible to AI?</span>
+        </h1>
+        <p class="hero-subtitle">
+          AI search engines like ChatGPT, Claude, and Perplexity face a timeout wall — if your site doesn't respond in 1-2 seconds, it's treated as unavailable. After that, race conditions determine ranking among fast sites.
+        </p>
+
+        <!-- URL Input Section -->
+        <div class="hero-input-section" id="check-input">
+          <form id="hero-check-form" onsubmit="event.preventDefault(); checkWebsite();">
+            <div class="hero-input-wrapper">
+              <input
+                type="url"
+                id="hero-url-input"
+                placeholder="https://example.com"
+                required
+                pattern="https?://.+"
+              />
+              <button type="submit" class="btn btn-primary">Check Now</button>
+            </div>
+            <p class="input-note">Free • No signup required • Instant results</p>
+          </form>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="metric-preview-card-compact">
+          <div class="metric-preview-header">
+            <span class="metric-icon">⚡</span>
+            <span class="metric-name">TTFB</span>
+            <div class="metric-preview-badge poor">1,850ms</div>
+          </div>
+          <div class="metric-target">Target: <600ms</div>
+          <div class="metric-status">⚠️ Past timeout wall</div>
+        </div>
+        <div class="metric-preview-card-compact">
+          <div class="metric-preview-header">
+            <span class="metric-icon">📐</span>
+            <span class="metric-name">CLS</span>
+            <div class="metric-preview-badge warning">0.18</div>
+          </div>
+          <div class="metric-target">Target: <0.1</div>
+          <div class="metric-status">⚠️ Parsing issues</div>
+        </div>
+        <div class="metric-preview-card-compact">
+          <div class="metric-preview-header">
+            <span class="metric-icon">🖱️</span>
+            <span class="metric-name">INP</span>
+            <div class="metric-preview-badge poor">420ms</div>
+          </div>
+          <div class="metric-target">Target: <200ms</div>
+          <div class="metric-status">❌ Agent friction</div>
+        </div>
+
+        <!-- Stats moved here -->
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-value">1-2 sec</div>
+            <div class="stat-label">The timeout wall</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">600ms</div>
+            <div class="stat-label">Target TTFB for AI</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">Free</div>
+            <div class="stat-label">Always free to use</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem Section -->
+  <section class="problem">
+    <div class="container">
+      <h2 class="section-title">Why AI Visibility Matters</h2>
+      <div class="problem-grid">
+        <div class="problem-card">
+          <div class="problem-icon">⏱️</div>
+          <h3>The Timeout Wall</h3>
+          <p>Most AI systems like ChatGPT, Claude, and Perplexity timeout between 1-2 seconds. Sites exceeding this threshold are abandoned, not just ranked lower like in traditional SEO.</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">🏁</div>
+          <h3>Race Conditions</h3>
+          <p>After passing the timeout wall, AI systems query multiple sources simultaneously. They only process the fastest responses. Slow sites lose to faster competitors.</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">🤖</div>
+          <h3>Agentic AI</h3>
+          <p>The next generation of AI doesn't just read — it performs tasks. Slow interactions cause agents to abandon your site entirely.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features">
+    <div class="container">
+      <h2 class="section-title">What You'll Discover</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>TTFB Analysis</h3>
+          <p>The most critical metric for AI visibility. First, pass the timeout wall (1-2 seconds). Then, win race conditions by being faster than competitors. Your server response time determines if AI systems like ChatGPT and Perplexity can access you at all.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📐</div>
+          <h3>CLS for AI Parsing</h3>
+          <p>Layout shifts break semantic continuity. Learn how your CLS affects RAG systems' ability to chunk your content properly for vector databases.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🖱️</div>
+          <h3>INP for Agents</h3>
+          <p>Essential for Agentic AI that performs tasks. Slow interactions mean abandoned bookings, failed form submissions, and lost opportunities.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Real User Data</h3>
+          <p>Powered by Chrome UX Report with real-world metrics from millions of websites. Not synthetic tests — actual user experiences.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Page & Origin</h3>
+          <p>Check specific pages and your entire website. Understand where performance bottlenecks exist across your site.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💡</div>
+          <h3>Actionable Insights</h3>
+          <p>Not just numbers — understand exactly what each metric means for AI visibility and get guidance on improvements.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how-it-works" class="how-it-works">
+    <div class="container">
+      <h2 class="section-title">How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3>Enter Your URL</h3>
+          <p>Simply paste your website URL. No signup, no API keys, no installation required.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3>We Analyze</h3>
+          <p>Our tool queries the Chrome UX Report API for real user performance data across three critical metrics.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>Get Results</h3>
+          <p>See your AI visibility score with detailed explanations of how each metric affects your presence in AI search.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <h3>Take Action</h3>
+          <p>Use our insights to optimize your site for AI visibility. Need help? Connect with an expert.</p>
+        </div>
+      </div>
+      <div class="cta-center">
+        <a href="#check-input" class="btn btn-primary btn-large">Start Your Free Analysis</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Social Proof / Trust -->
+  <section class="trust">
+    <div class="container">
+      <h2 class="section-title">Trusted Data Source</h2>
+      <div class="trust-content">
+        <div class="trust-badge">
+          <div class="badge-icon">✓</div>
+          <div class="badge-text">
+            <strong>Chrome UX Report (CrUX)</strong>
+            <p>Official Google dataset with real user measurements from millions of websites</p>
+          </div>
+        </div>
+        <div class="trust-badge">
+          <div class="badge-icon">✓</div>
+          <div class="badge-text">
+            <strong>75th Percentile (p75)</strong>
+            <p>Industry standard metric used by Google for Core Web Vitals scoring</p>
+          </div>
+        </div>
+        <div class="trust-badge">
+          <div class="badge-icon">✓</div>
+          <div class="badge-text">
+            <strong>Updated Regularly</strong>
+            <p>CrUX data is updated monthly with fresh user experience measurements</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About / Creator -->
+  <section id="about" class="about">
+    <div class="container">
+      <div class="about-content">
+        <div class="about-image">
+          <img src="Eu.webp" alt="Andre Guelmann - SEO Expert" width="200" height="200">
+        </div>
+        <div class="about-text">
+          <h2>Built by an SEO Expert</h2>
+          <p class="about-intro">Hi, I'm <strong>Andre Guelmann</strong>, an SEO & Website Growth expert with over 15 years of experience helping companies improve their online visibility.</p>
+          <p>As AI search engines began dominating how people find information, I noticed a critical gap: traditional SEO metrics don't capture AI visibility. Speed isn't just about ranking anymore — it's about being included at all.</p>
+          <p>I built this tool to help website owners understand their AI visibility and take action before they become invisible to the next generation of search.</p>
+          <div class="about-cta">
+            <a href="https://andrglmn.me/AI-Extension-Contact" target="_blank" class="btn btn-secondary">Get Expert Help</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq">
+    <div class="container">
+      <h2 class="section-title">Frequently Asked Questions</h2>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h3>What is AI visibility?</h3>
+          <p>AI visibility refers to your website's ability to be accessed, parsed, and referenced by AI search engines and Large Language Models (LLMs) like ChatGPT, Claude, and Perplexity.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Why does speed matter more for AI than traditional SEO?</h3>
+          <p>AI systems face a timeout wall — if your site doesn't respond in 1-2 seconds, it's treated as unavailable (not just ranked lower). After passing that wall, race conditions determine ranking among fast sites.</p>
+        </div>
+        <div class="faq-item">
+          <h3>What is the Chrome UX Report?</h3>
+          <p>CrUX is a dataset containing real user experience measurements from millions of websites. It provides real-world data on how fast sites actually load for users.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Is this tool really free?</h3>
+          <p>Yes, completely free with no signup required. The Chrome UX Report API is free, and I'm committed to keeping this tool accessible to everyone.</p>
+        </div>
+        <div class="faq-item">
+          <h3>What if my site has no CrUX data?</h3>
+          <p>CrUX requires a minimum threshold of real-user visits. If your site doesn't have data, it means either it's too new or doesn't have enough traffic to be measured yet.</p>
+        </div>
+        <div class="faq-item">
+          <h3>What's the target TTFB for AI visibility?</h3>
+          <p>First, stay under 1-2 seconds to pass the timeout wall. Then aim for under 600ms for optimal AI crawler access. Under 200ms is ideal and wins most race conditions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>AI & LLM Visibility Validator</h4>
+          <p>Check if your website is fast enough for ChatGPT, Claude, and Perplexity.</p>
+        </div>
+        <div class="footer-section">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="tool.html">Free Tool</a></li>
+            <li><a href="https://developer.chrome.com/docs/crux" target="_blank">Chrome UX Report</a></li>
+            <li><a href="https://web.dev/vitals/" target="_blank">Core Web Vitals</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Connect</h4>
+          <ul>
+            <li><a href="https://andrglmn.me" target="_blank">Andre Guelmann</a></li>
+            <li><a href="https://andrglmn.me/AI-Extension-Contact" target="_blank">Get Help</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Andre Guelmann. All rights reserved.</p>
+        <p>Data powered by <a href="https://developer.chrome.com/docs/crux" target="_blank">Chrome UX Report</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function checkWebsite() {
+      const urlInput = document.getElementById('hero-url-input');
+      const url = urlInput.value.trim();
+
+      if (!url) {
+        alert('Please enter a URL');
+        return;
+      }
+
+      // Validate URL format
+      try {
+        new URL(url);
+      } catch (error) {
+        alert('Please enter a valid URL (e.g., https://example.com)');
+        return;
+      }
+
+      // Redirect to tool page with URL parameter
+      window.location.href = 'tool.html?url=' + encodeURIComponent(url);
+    }
+  </script>
+</body>
+</html>

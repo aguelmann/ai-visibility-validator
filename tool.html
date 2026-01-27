@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI & LLM Visibility Validator - Check Your Results</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Check if your website is fast enough for ChatGPT, Claude, and Perplexity. Validate your site's TTFB, CLS, and INP metrics for AI visibility.">
+  <meta name="keywords" content="AI visibility, GEO, Generative Engine Optimization, CrUX, Core Web Vitals, TTFB, AI SEO, ChatGPT, Claude, Perplexity, LLM visibility">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="AI & LLM Visibility Validator">
+  <meta property="og:description" content="Check if your website is fast enough for AI search engines">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/icons/icon128.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AI & LLM Visibility Validator">
+  <meta name="twitter:description" content="Check if your website is fast enough for AI search engines">
+  <meta name="twitter:image" content="/icons/icon128.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar">
+      <div class="nav-header">
+        <a href="index.html" class="back-home" title="Back to Home">
+          <div class="logo">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="48" height="48" rx="10" fill="#E8EAEB"/>
+              <path d="M28 8L18 26H24L20 40L34 20H27L32 8H28Z" fill="#F5C638"/>
+              <text x="8" y="34" font-family="Montserrat, sans-serif" font-size="18" font-weight="700" fill="#25995C">A</text>
+              <text x="20" y="34" font-family="Montserrat, sans-serif" font-size="18" font-weight="700" fill="#25995C">I</text>
+            </svg>
+          </div>
+        </a>
+      </div>
+      <ul class="nav-menu">
+        <li class="nav-item active" data-tab="overview">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Overview</span>
+        </li>
+        <li class="nav-item" data-tab="ttfb">
+          <span class="nav-icon">⚡</span>
+          <span class="nav-label">TTFB</span>
+        </li>
+        <li class="nav-item" data-tab="cls">
+          <span class="nav-icon">📐</span>
+          <span class="nav-label">CLS</span>
+        </li>
+        <li class="nav-item" data-tab="inp">
+          <span class="nav-icon">🖱️</span>
+          <span class="nav-label">INP</span>
+        </li>
+        <li class="nav-item" data-tab="help">
+          <span class="nav-icon">❓</span>
+          <span class="nav-label">More Info</span>
+        </li>
+        <li class="nav-item" data-tab="gethelp">
+          <span class="nav-icon">💬</span>
+          <span class="nav-label">Get Help</span>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="main-content">
+      <!-- Header -->
+      <header class="main-header">
+        <h1>AI & LLM Visibility Validator</h1>
+        <p class="subtitle">Check if your website is fast enough for AI search engines</p>
+      </header>
+
+      <!-- URL Input Section -->
+      <div class="url-input-section">
+        <label for="url-input">Enter Website URL:</label>
+        <div class="url-input-wrapper">
+          <input
+            type="url"
+            id="url-input"
+            placeholder="https://example.com"
+            required
+            pattern="https?://.+"
+          />
+          <button id="check-button" class="check-button">Analyze</button>
+        </div>
+        <p class="url-hint">Enter the full URL including https://</p>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading" class="hidden">
+        <div class="loader"></div>
+        <p>Analyzing your website's performance metrics...</p>
+      </div>
+
+      <!-- Error Message -->
+      <div id="error" class="hidden error-message">
+        <p id="error-text"></p>
+      </div>
+
+      <!-- Tab: Overview -->
+      <div id="tab-overview" class="tab-content active">
+        <div class="tab-inner">
+          <h2>Performance Overview</h2>
+
+          <!-- Page Results -->
+          <div class="data-section">
+            <h3>Current Page</h3>
+            <div id="page-url" class="url-display"></div>
+            <div id="page-overview-metrics" class="metrics-grid-overview"></div>
+          </div>
+
+          <!-- Origin Results -->
+          <div class="data-section">
+            <h3>Entire Website</h3>
+            <div id="origin-url" class="url-display"></div>
+            <div id="origin-overview-metrics" class="metrics-grid-overview"></div>
+          </div>
+
+          <!-- CTA Section -->
+          <div class="cta-section">
+            <p class="cta-text">Need help improving your website's AI visibility?</p>
+            <a href="https://andrglmn.me/AI-Extension-Contact" target="_blank" class="cta-button">Get Expert Help</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: TTFB -->
+      <div id="tab-ttfb" class="tab-content">
+        <div class="tab-inner">
+          <h2>Time To First Byte (TTFB)</h2>
+          <p class="metric-intro">TTFB measures server response time - critical for AI crawler access and race conditions in RAG systems.</p>
+
+          <!-- Page TTFB -->
+          <div class="data-section">
+            <h3>Current Page</h3>
+            <div id="page-ttfb-detail" class="metric-detail"></div>
+          </div>
+
+          <!-- Origin TTFB -->
+          <div class="data-section">
+            <h3>Entire Website</h3>
+            <div id="origin-ttfb-detail" class="metric-detail"></div>
+          </div>
+
+          <!-- CTA Section -->
+          <div class="cta-section">
+            <p class="cta-text">Need help improving your website's AI visibility?</p>
+            <a href="https://andrglmn.me/AI-Extension-Contact" target="_blank" class="cta-button">Get Expert Help</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: CLS -->
+      <div id="tab-cls" class="tab-content">
+        <div class="tab-inner">
+          <h2>Cumulative Layout Shift (CLS)</h2>
+          <p class="metric-intro">CLS measures visual stability - important for AI parsing and semantic continuity in vector databases.</p>
+
+          <!-- Page CLS -->
+          <div class="data-section">
+            <h3>Current Page</h3>
+            <div id="page-cls-detail" class="metric-detail"></div>
+          </div>
+
+          <!-- Origin CLS -->
+          <div class="data-section">
+            <h3>Entire Website</h3>
+            <div id="origin-cls-detail" class="metric-detail"></div>
+          </div>
+
+          <!-- CTA Section -->
+          <div class="cta-section">
+            <p class="cta-text">Need help improving your website's AI visibility?</p>
+            <a href="https://andrglmn.me/AI-Extension-Contact" target="_blank" class="cta-button">Get Expert Help</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: INP -->
+      <div id="tab-inp" class="tab-content">
+        <div class="tab-inner">
+          <h2>Interaction to Next Paint (INP)</h2>
+          <p class="metric-intro">INP measures interactivity - essential for Agentic AI that performs tasks like booking and form filling.</p>
+
+          <!-- Page INP -->
+          <div class="data-section">
+            <h3>Current Page</h3>
+            <div id="page-inp-detail" class="metric-detail"></div>
+          </div>
+
+          <!-- Origin INP -->
+          <div class="data-section">
+            <h3>Entire Website</h3>
+            <div id="origin-inp-detail" class="metric-detail"></div>
+          </div>
+
+          <!-- CTA Section -->
+          <div class="cta-section">
+            <p class="cta-text">Need help improving your website's AI visibility?</p>
+            <a href="https://andrglmn.me/AI-Extension-Contact" target="_blank" class="cta-button">Get Expert Help</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: More Info -->
+      <div id="tab-help" class="tab-content">
+        <div class="tab-inner">
+          <h2>About AI Visibility</h2>
+
+          <div class="help-card">
+            <h3>What is AI Visibility?</h3>
+            <p>AI visibility refers to your website's ability to be accessed, parsed, and referenced by AI search engines and Large Language Models (LLMs) like ChatGPT, Claude, and Perplexity.</p>
+          </div>
+
+          <div class="help-card">
+            <h3>Why Speed Matters for AI</h3>
+            <p>Unlike traditional SEO where slow sites rank lower, AI systems face a <strong>timeout wall</strong> (1-2 seconds) where slow sites are treated as unavailable. After that, <strong>race conditions</strong> determine ranking — AI systems query multiple sources simultaneously and only process the fastest responses.</p>
+          </div>
+
+          <div class="help-card">
+            <h3>Key Concepts</h3>
+            <h4>GEO (Generative Engine Optimization)</h4>
+            <p>The practice of optimizing content and performance for AI-powered search engines and answer engines.</p>
+
+            <h4>RAG (Retrieval-Augmented Generation)</h4>
+            <p>Systems that query multiple sources in real-time to generate answers. Speed is binary - fast sites get included, slow sites timeout.</p>
+
+            <h4>Timeout Wall</h4>
+            <p>Most RAG systems timeout between 1-5 seconds. Sites exceeding this threshold are treated as unavailable.</p>
+          </div>
+
+          <div class="help-card">
+            <h3>Data Source</h3>
+            <p>This tool uses the <strong>Chrome UX Report (CrUX)</strong>, which contains real user measurement data from millions of websites. Metrics are calculated from the 75th percentile (p75) of actual user experiences.</p>
+          </div>
+
+          <!-- CTA Section -->
+          <div class="cta-section">
+            <p class="cta-text">Need help improving your website's AI visibility?</p>
+            <a href="https://andrglmn.me/AI-Extension-Contact" target="_blank" class="cta-button">Get Expert Help</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Get Help -->
+      <div id="tab-gethelp" class="tab-content">
+        <div class="tab-inner">
+          <h2>Need Help?</h2>
+
+          <div class="get-help-card">
+            <img src="Eu.webp" width="120" height="120" alt="Andre Guelmann" class="profile-pic" />
+            <div class="get-help-content">
+              <p>Hi, I'm <strong>Andre Guelmann</strong>, an SEO & Website Growth expert with more than 15 years of successfully helping companies and startups of all sizes improve their visibility through Technical SEO and Website Optimization.</p>
+              <p>If you need help improving these numbers or with something else, get in touch and let's see if I can help you.</p>
+              <div class="get-help-cta">
+                <a href="https://andrglmn.me/AI-Extension-Contact" target="_blank" class="cta-button">Get In Touch</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="main-footer">
+        <p class="data-source">Data powered by <a href="https://developer.chrome.com/docs/crux" target="_blank">Chrome UX Report</a></p>
+        <p class="built-by">Built by <a href="https://andrglmn.me/AI-Extension-Footer" target="_blank">Andre Guelmann</a></p>
+      </footer>
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

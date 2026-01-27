@@ -1,0 +1,14 @@
+- Name: AI & LLM Visibility Validator (update title and copy)
+- Remove references to Google and their AI tools/features; instead, make sure to always mention, when relevant, ChatGPT, Claude & Perplexity
+- Redesign the above the fold section to add a text input field directly in the landing page for the visitor to input and test their page/website. The idea is for the visitor to land on this page and be able to check their website/page as soon as possible.
+- Keep the result page (the one based on the popup) just to show the result. 
+- For the blocks with examples of TTFB & CLS & INP, use results that are in the red and yellow, and make these blocks smaller (or combine the target metrics next to them).
+- Move the Timeout Wall block to be the first one; this "wall" is a bigger factor in terms of AI visibility, only after that the race conditions are relevant (since they are some sort of ranking)
+- In the What You'll Discover section, use this order for the blocks (still 3 at a time horizontally):
+
+1. TTFB Analysis (mentioning both the timeout wall and the race conditions - this should be the case on the whole website/tool)
+2. CLS for AI Parsing
+3. INP for Agents
+4. Real User Data
+5. Page & Origin
+6. Actionable Insights

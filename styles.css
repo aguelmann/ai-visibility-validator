@@ -1,0 +1,677 @@
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Lato', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #101218;
+  background-color: #F3F5F5;
+  min-height: 100vh;
+}
+
+/* App Container - Grid Layout */
+#app-container {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================
+   SIDEBAR NAVIGATION
+   =========================== */
+#sidebar {
+  background-color: #101218;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 15px 0;
+}
+
+.nav-header {
+  text-align: center;
+  padding: 10px 0 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 10px;
+}
+
+.back-home {
+  text-decoration: none;
+  display: block;
+  transition: opacity 0.2s;
+}
+
+.back-home:hover {
+  opacity: 0.8;
+}
+
+.logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.nav-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.nav-item:hover {
+  background-color: rgba(37, 153, 92, 0.1);
+  color: #fff;
+}
+
+.nav-item.active {
+  background-color: #25995c;
+  color: #fff;
+}
+
+.nav-icon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.nav-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===========================
+   MAIN CONTENT AREA
+   =========================== */
+#main-content {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #F3F5F5;
+}
+
+/* Header */
+.main-header {
+  background-color: #fff;
+  padding: 20px;
+  border-bottom: 2px solid #25995c;
+  text-align: center;
+}
+
+.main-header h1 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #101218;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #666;
+}
+
+/* URL Input Section */
+.url-input-section {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.url-input-section label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1a202c;
+}
+
+.url-input-wrapper {
+  display: flex;
+  gap: 12px;
+}
+
+#url-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: 'Lato', sans-serif;
+  transition: border-color 0.2s;
+}
+
+#url-input:focus {
+  outline: none;
+  border-color: #25995c;
+}
+
+#url-input:invalid {
+  border-color: #f44336;
+}
+
+.check-button {
+  padding: 12px 24px;
+  background: #25995c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  transition: background 0.2s;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.check-button:hover {
+  background: #1e7a49;
+}
+
+.check-button:active {
+  transform: scale(0.98);
+}
+
+.url-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #718096;
+}
+
+/* Old Check Button (removed) */
+
+/* Loading State */
+#loading {
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.loader {
+  border: 3px solid #F3F5F5;
+  border-top: 3px solid #25995c;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error Message */
+.error-message {
+  background-color: #fee;
+  border: 2px solid #F44336;
+  border-radius: 4px;
+  padding: 15px;
+  margin: 15px 20px;
+  color: #c62828;
+}
+
+/* ===========================
+   TAB CONTENT
+   =========================== */
+.tab-content {
+  display: none;
+  flex: 1;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.tab-inner {
+  padding: 20px;
+}
+
+.tab-inner > h2 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #101218;
+  margin-bottom: 8px;
+}
+
+.metric-intro {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+/* Data Sections */
+.data-section {
+  margin-bottom: 25px;
+}
+
+.data-section h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #25995c;
+  margin-bottom: 10px;
+}
+
+.url-display {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 12px;
+  word-break: break-all;
+  padding: 8px 10px;
+  background-color: #fff;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+/* ===========================
+   OVERVIEW TAB - METRICS GRID
+   =========================== */
+.metrics-grid-overview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.metric-card-overview {
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card-overview:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.metric-name-overview {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #101218;
+  margin-bottom: 8px;
+}
+
+.metric-value-overview {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #101218;
+  margin-bottom: 6px;
+}
+
+.metric-badge-overview {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+/* ===========================
+   DETAIL TAB - METRIC CARDS
+   =========================== */
+.metric-detail {
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  padding: 20px;
+}
+
+.metric-header-detail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  color: #fff;
+}
+
+.metric-title-detail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.grade-detail {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.metric-name-detail {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.metric-value-detail {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.metric-body-detail {
+  padding: 0;
+}
+
+.category-badge-detail {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.category-description-detail {
+  background-color: #F3F5F5;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.category-description-detail strong {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.category-impact-detail {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.category-primary-impact-detail {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.6;
+  padding: 12px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border-left: 3px solid #25995c;
+}
+
+/* ===========================
+   MORE INFO TAB
+   =========================== */
+.help-card {
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 15px;
+}
+
+.help-card h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #25995c;
+  margin-bottom: 10px;
+}
+
+.help-card h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #101218;
+  margin: 15px 0 8px 0;
+}
+
+.help-card p {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.help-card p:last-child {
+  margin-bottom: 0;
+}
+
+/* ===========================
+   GET HELP TAB
+   =========================== */
+.get-help-card {
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  padding: 20px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.profile-pic {
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.get-help-content {
+  flex: 1;
+}
+
+.get-help-content p {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.get-help-content p:last-child {
+  margin-bottom: 0;
+}
+
+.get-help-cta {
+  margin-top: 15px;
+}
+
+/* ===========================
+   CTA SECTION
+   =========================== */
+.cta-section {
+  text-align: center;
+  margin: 25px 0 15px;
+  padding: 20px;
+  background-color: #fff;
+  border: 2px solid #25995c;
+  border-radius: 4px;
+}
+
+.cta-text {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #101218;
+  margin-bottom: 12px;
+}
+
+.cta-button {
+  display: inline-block;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #fff;
+  background-color: #25995c;
+  padding: 10px 25px;
+  border: 2px solid #25995c;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+
+.cta-button:hover {
+  background-color: #238b54;
+  border-color: #238b54;
+}
+
+/* ===========================
+   FOOTER
+   =========================== */
+.main-footer {
+  text-align: center;
+  padding: 15px 20px;
+  border-top: 1px solid #ddd;
+  margin-top: auto;
+  background-color: #fff;
+}
+
+.data-source {
+  font-size: 10px;
+  color: #999;
+  margin-bottom: 5px;
+}
+
+.data-source a {
+  color: #25995c;
+  text-decoration: none;
+}
+
+.data-source a:hover {
+  text-decoration: underline;
+}
+
+.built-by {
+  font-size: 10px;
+  color: #999;
+}
+
+.built-by a {
+  color: #25995c;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.built-by a:hover {
+  text-decoration: underline;
+}
+
+/* ===========================
+   UTILITY CLASSES
+   =========================== */
+.hidden {
+  display: none !important;
+}
+
+.no-data {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* ===========================
+   RESPONSIVE DESIGN
+   =========================== */
+@media (max-width: 768px) {
+  #app-container {
+    grid-template-columns: 80px 1fr;
+  }
+
+  .nav-label {
+    font-size: 9px;
+  }
+
+  .nav-icon {
+    font-size: 18px;
+  }
+
+  .main-header h1 {
+    font-size: 18px;
+  }
+
+  .url-input-wrapper {
+    flex-direction: column;
+  }
+
+  .check-button {
+    width: 100%;
+  }
+
+  .metrics-grid-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .get-help-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  #app-container {
+    grid-template-columns: 60px 1fr;
+  }
+
+  .nav-item {
+    padding: 10px 5px;
+  }
+
+  .nav-label {
+    font-size: 8px;
+  }
+
+  .nav-icon {
+    font-size: 16px;
+  }
+
+  .main-header {
+    padding: 15px;
+  }
+
+  .main-header h1 {
+    font-size: 16px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+  }
+
+  .url-input-section {
+    padding: 15px;
+    margin: 15px;
+  }
+
+  .tab-inner {
+    padding: 15px;
+  }
+}

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Vercel
+.vercel
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Chrome Extension Files (not needed for web app)
+manifest.json
+popup.html
+popup.js
+
+# Cloud function (already deployed)
+cloud-function/
