@@ -584,6 +584,156 @@ body {
 }
 
 /* ===========================
+   CRAWLABILITY TAB
+   =========================== */
+.crawl-status-card {
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.crawl-status-card h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #25995c;
+  margin-bottom: 8px;
+}
+
+.crawl-status-card p {
+  font-size: 12px;
+  color: #555;
+  margin: 5px 0;
+}
+
+.crawl-status-card a {
+  color: #25995c;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.crawl-status-card a:hover {
+  text-decoration: underline;
+}
+
+.bots-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  text-align: center;
+}
+
+.summary-card h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.summary-card .summary-value {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #101218;
+}
+
+.summary-card.allowed .summary-value {
+  color: #25995c;
+}
+
+.summary-card.blocked .summary-value {
+  color: #F44336;
+}
+
+.bots-list {
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+}
+
+.company-group {
+  margin-bottom: 20px;
+}
+
+.company-group:last-child {
+  margin-bottom: 0;
+}
+
+.company-header {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #101218;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #25995c;
+}
+
+.bot-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+.bot-item:last-child {
+  margin-bottom: 0;
+}
+
+.bot-info {
+  flex: 1;
+}
+
+.bot-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #101218;
+  margin-bottom: 2px;
+}
+
+.bot-product {
+  font-size: 11px;
+  color: #666;
+}
+
+.bot-status {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.bot-status.allowed {
+  background-color: #25995c;
+  color: #fff;
+}
+
+.bot-status.blocked {
+  background-color: #F44336;
+  color: #fff;
+}
+
+/* ===========================
    UTILITY CLASSES
    =========================== */
 .hidden {
@@ -627,6 +777,10 @@ body {
   }
 
   .metrics-grid-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .bots-summary-grid {
     grid-template-columns: 1fr;
   }
 

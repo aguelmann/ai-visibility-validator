@@ -1,6 +1,53 @@
 // Configuration loaded from config.js
 // API calls now go through Cloud Function proxy for security
 
+// AI Bots List (33 bots for crawlability checking)
+const AI_BOTS = [
+  // 1. OpenAI (Most Common)
+  { userAgent: 'GPTBot', company: 'OpenAI', product: 'ChatGPT training crawler', category: 'Training' },
+  { userAgent: 'ChatGPT-User', company: 'OpenAI', product: 'ChatGPT user-initiated browsing', category: 'Browsing' },
+  { userAgent: 'OAI-SearchBot', company: 'OpenAI', product: 'SearchGPT crawler', category: 'Search' },
+  // 2. Perplexity
+  { userAgent: 'PerplexityBot', company: 'Perplexity', product: 'Perplexity AI search crawler', category: 'Search' },
+  { userAgent: 'Perplexity-User', company: 'Perplexity', product: 'Perplexity user browsing', category: 'Browsing' },
+  // 3. Anthropic
+  { userAgent: 'ClaudeBot', company: 'Anthropic', product: 'Claude training crawler', category: 'Training' },
+  { userAgent: 'Claude-SearchBot', company: 'Anthropic', product: 'Claude search functionality', category: 'Search' },
+  { userAgent: 'Claude-User', company: 'Anthropic', product: 'Claude user-initiated browsing', category: 'Browsing' },
+  // 4. Google
+  { userAgent: 'Google-Extended', company: 'Google', product: 'Gemini AI training', category: 'Training' },
+  { userAgent: 'CloudVertexBot', company: 'Google', product: 'Google Cloud Vertex AI', category: 'Training' },
+  { userAgent: 'Gemini-Deep-Research', company: 'Google', product: 'Gemini deep research feature', category: 'Research' },
+  { userAgent: 'Google-NotebookLM', company: 'Google', product: 'NotebookLM AI assistant', category: 'Research' },
+  { userAgent: 'GoogleAgent-Mariner', company: 'Google', product: 'Google AI agent browsing', category: 'Browsing' },
+  { userAgent: 'Googlebot', company: 'Google', product: 'Googlebot Desktop', category: 'Crawling' },
+  { userAgent: 'Googlebot-Mobile', company: 'Google', product: 'Googlebot Smartphone', category: 'Crawling' },
+  { userAgent: 'Googlebot-Image', company: 'Google', product: 'Google Image crawler', category: 'Crawling' },
+  { userAgent: 'Googlebot-Video', company: 'Google', product: 'Google Video crawler', category: 'Crawling' },
+  { userAgent: 'Googlebot-News', company: 'Google', product: 'Google News crawler', category: 'Crawling' },
+  { userAgent: 'Storebot-Google', company: 'Google', product: 'Google StoreBot Desktop', category: 'Crawling' },
+  { userAgent: 'Storebot-Google-Mobile', company: 'Google', product: 'Google StoreBot Mobile', category: 'Crawling' },
+  { userAgent: 'GoogleOther', company: 'Google', product: 'GoogleOther Desktop', category: 'Crawling' },
+  { userAgent: 'GoogleOther-Mobile', company: 'Google', product: 'GoogleOther Mobile', category: 'Crawling' },
+  { userAgent: 'GoogleOther-Image', company: 'Google', product: 'GoogleOther Image crawler', category: 'Crawling' },
+  { userAgent: 'GoogleOther-Video', company: 'Google', product: 'GoogleOther Video crawler', category: 'Crawling' },
+  // 5. Mistral
+  { userAgent: 'MistralAI-User', company: 'Mistral', product: 'Mistral AI user browsing', category: 'Browsing' },
+  // 6. Amazon
+  { userAgent: 'Amazonbot', company: 'Amazon', product: 'Alexa AI training', category: 'Training' },
+  // 7. Apple
+  { userAgent: 'Applebot-Extended', company: 'Apple', product: 'Apple Intelligence training', category: 'Training' },
+  // 8. Meta
+  { userAgent: 'FacebookBot', company: 'Meta', product: 'Facebook AI crawler', category: 'Training' },
+  { userAgent: 'facebookexternalhit', company: 'Meta', product: 'Meta external content fetcher', category: 'Browsing' },
+  { userAgent: 'Meta-ExternalAgent', company: 'Meta', product: 'Meta AI external agent', category: 'Browsing' },
+  { userAgent: 'meta-externalfetcher', company: 'Meta', product: 'Meta content fetcher', category: 'Browsing' },
+  // 9. DuckDuckGo
+  { userAgent: 'DuckAssistBot', company: 'DuckDuckGo', product: 'DuckDuckGo AI search', category: 'Search' },
+  // 10. Common Crawl
+  { userAgent: 'CCBot', company: 'Common Crawl', product: 'Open web crawl data (used by AI models)', category: 'Training' }
+];
+
 // TTFB Categories based on CSV data
 const TTFB_CATEGORIES = [
   {
@@ -369,6 +416,11 @@ function clearResults() {
   document.getElementById('origin-cls-detail').innerHTML = '';
   document.getElementById('page-inp-detail').innerHTML = '';
   document.getElementById('origin-inp-detail').innerHTML = '';
+
+  // Clear crawlability tab
+  document.getElementById('crawl-status-card').innerHTML = '';
+  document.getElementById('bots-summary').innerHTML = '';
+  document.getElementById('bots-list').innerHTML = '';
 }
 
 // Show error message
@@ -420,6 +472,272 @@ function showResults(pageData, originData) {
 
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('error').classList.add('hidden');
+}
+
+// Parse robots.txt content into structured rules
+function parseRobotsTxt(content) {
+  const lines = content.split('\n');
+  const rules = [];
+  let currentUserAgent = null;
+
+  for (let line of lines) {
+    line = line.trim();
+
+    // Skip comments and empty lines
+    if (line.startsWith('#') || line === '') continue;
+
+    const lowerLine = line.toLowerCase();
+
+    if (lowerLine.startsWith('user-agent:')) {
+      currentUserAgent = line.substring(11).trim();
+    } else if (lowerLine.startsWith('disallow:') && currentUserAgent) {
+      const path = line.substring(9).trim();
+      rules.push({
+        userAgent: currentUserAgent,
+        directive: 'Disallow',
+        path: path
+      });
+    } else if (lowerLine.startsWith('allow:') && currentUserAgent) {
+      const path = line.substring(6).trim();
+      rules.push({
+        userAgent: currentUserAgent,
+        directive: 'Allow',
+        path: path
+      });
+    }
+  }
+
+  return rules;
+}
+
+// Check if a bot is blocked by robots.txt rules
+function isBotBlocked(botUserAgent, rules) {
+  // Find rules that apply to this bot or to all bots (*)
+  const applicableRules = rules.filter(rule =>
+    rule.userAgent === '*' ||
+    rule.userAgent.toLowerCase() === botUserAgent.toLowerCase()
+  );
+
+  // If no rules, bot is allowed
+  if (applicableRules.length === 0) {
+    return false;
+  }
+
+  // Check for disallow rules
+  // If there's a "Disallow: /" rule, the bot is blocked from the entire site
+  const hasFullDisallow = applicableRules.some(rule =>
+    rule.directive === 'Disallow' && rule.path === '/'
+  );
+
+  // Check for empty disallow (allows everything)
+  const hasEmptyDisallow = applicableRules.some(rule =>
+    rule.directive === 'Disallow' && rule.path === ''
+  );
+
+  if (hasEmptyDisallow) {
+    return false; // Empty disallow means allow all
+  }
+
+  if (hasFullDisallow) {
+    // Check if there are any Allow rules that override
+    const hasAllowOverride = applicableRules.some(rule =>
+      rule.directive === 'Allow' && rule.path !== ''
+    );
+
+    return !hasAllowOverride; // Blocked unless there's an allow override
+  }
+
+  // Check if there's an explicit "Allow: /" rule (bot is explicitly allowed)
+  const hasFullAllow = applicableRules.some(rule =>
+    rule.directive === 'Allow' && rule.path === '/'
+  );
+
+  if (hasFullAllow) {
+    return false; // Explicitly allowed
+  }
+
+  // If there are only specific disallow rules (not "Disallow: /"),
+  // the bot is NOT blocked from the site (just from those specific paths)
+  // We only consider a bot "blocked" if there's "Disallow: /" without an override
+  return false;
+}
+
+// Fetch robots.txt via proxy
+async function fetchRobotsTxt(robotsUrl) {
+  if (!CONFIG.ROBOTS_PROXY_URL || CONFIG.ROBOTS_PROXY_URL === 'REPLACE_WITH_YOUR_CLOUD_FUNCTION_URL') {
+    throw new Error('Robots proxy URL not configured. Please update config.js with your deployed function URL.');
+  }
+
+  const response = await fetch(CONFIG.ROBOTS_PROXY_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      action: 'fetchRobotsTxt',
+      url: robotsUrl
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Failed to fetch robots.txt: ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error(data.error || 'Failed to fetch robots.txt');
+  }
+
+  return data.text;
+}
+
+// Analyze crawlability
+async function analyzeCrawlability(url) {
+  try {
+    // Construct robots.txt URL
+    const urlObj = new URL(url);
+    const robotsUrl = `${urlObj.protocol}//${urlObj.host}/robots.txt`;
+
+    // Fetch robots.txt
+    let robotsContent;
+    try {
+      robotsContent = await fetchRobotsTxt(robotsUrl);
+    } catch (error) {
+      // No robots.txt found - all bots allowed
+      return {
+        robotsExists: false,
+        robotsUrl: robotsUrl,
+        bots: AI_BOTS.map(bot => ({
+          ...bot,
+          allowed: true,
+          reason: 'No robots.txt found (default allow)'
+        })),
+        summary: {
+          total: AI_BOTS.length,
+          allowed: AI_BOTS.length,
+          blocked: 0
+        }
+      };
+    }
+
+    // Parse robots.txt
+    const rules = parseRobotsTxt(robotsContent);
+
+    // Analyze each bot
+    const analyzedBots = AI_BOTS.map(bot => {
+      const blocked = isBotBlocked(bot.userAgent, rules);
+      return {
+        ...bot,
+        allowed: !blocked,
+        reason: blocked ? 'Blocked by robots.txt' : 'Allowed'
+      };
+    });
+
+    // Calculate summary
+    const allowedCount = analyzedBots.filter(bot => bot.allowed).length;
+    const blockedCount = analyzedBots.filter(bot => !bot.allowed).length;
+
+    return {
+      robotsExists: true,
+      robotsUrl: robotsUrl,
+      robotsContent: robotsContent,
+      bots: analyzedBots,
+      summary: {
+        total: AI_BOTS.length,
+        allowed: allowedCount,
+        blocked: blockedCount
+      }
+    };
+
+  } catch (error) {
+    console.error('Error analyzing crawlability:', error);
+    throw error;
+  }
+}
+
+// Render crawlability results
+function renderCrawlabilityResults(crawlData) {
+  // Render status card
+  const statusCard = document.getElementById('crawl-status-card');
+  statusCard.innerHTML = `
+    <h3>Robots.txt Status</h3>
+    <p><strong>Status:</strong> ${crawlData.robotsExists ? 'Found' : 'Not Found'}</p>
+    <p><strong>URL:</strong> <a href="${crawlData.robotsUrl}" target="_blank">${crawlData.robotsUrl}</a></p>
+    ${!crawlData.robotsExists ? '<p><em>No robots.txt file found. All bots are allowed by default.</em></p>' : ''}
+  `;
+
+  // Render summary
+  const summaryDiv = document.getElementById('bots-summary');
+  summaryDiv.innerHTML = `
+    <div class="summary-card">
+      <h4>Total Bots</h4>
+      <div class="summary-value">${crawlData.summary.total}</div>
+    </div>
+    <div class="summary-card allowed">
+      <h4>Allowed</h4>
+      <div class="summary-value">${crawlData.summary.allowed}</div>
+    </div>
+    <div class="summary-card blocked">
+      <h4>Blocked</h4>
+      <div class="summary-value">${crawlData.summary.blocked}</div>
+    </div>
+  `;
+
+  // Group bots by company
+  const botsByCompany = {};
+  crawlData.bots.forEach(bot => {
+    if (!botsByCompany[bot.company]) {
+      botsByCompany[bot.company] = [];
+    }
+    botsByCompany[bot.company].push(bot);
+  });
+
+  // Render bots list
+  const botsListDiv = document.getElementById('bots-list');
+  let botsHTML = '';
+
+  for (const company in botsByCompany) {
+    botsHTML += `
+      <div class="company-group">
+        <div class="company-header">${company}</div>
+    `;
+
+    botsByCompany[company].forEach(bot => {
+      botsHTML += `
+        <div class="bot-item">
+          <div class="bot-info">
+            <div class="bot-name">${bot.userAgent}</div>
+            <div class="bot-product">${bot.product}</div>
+          </div>
+          <div class="bot-status ${bot.allowed ? 'allowed' : 'blocked'}">
+            ${bot.allowed ? 'Allowed' : 'Blocked'}
+          </div>
+        </div>
+      `;
+    });
+
+    botsHTML += `</div>`;
+  }
+
+  botsListDiv.innerHTML = botsHTML;
+}
+
+// Check crawlability
+async function checkCrawlability(url) {
+  try {
+    const crawlData = await analyzeCrawlability(url);
+    renderCrawlabilityResults(crawlData);
+  } catch (error) {
+    console.error('Error checking crawlability:', error);
+    // Show error in the crawlability tab
+    document.getElementById('crawl-status-card').innerHTML = `
+      <h3>Error</h3>
+      <p style="color: #F44336;">Failed to check crawlability: ${error.message}</p>
+    `;
+    document.getElementById('bots-summary').innerHTML = '';
+    document.getElementById('bots-list').innerHTML = '';
+  }
 }
 
 // Main check function
@@ -486,6 +804,9 @@ async function checkAIVisibility() {
     } else {
       showResults(pageData, originData);
     }
+
+    // Check crawlability (run regardless of CrUX data availability)
+    await checkCrawlability(origin);
 
   } catch (error) {
     console.error('Error checking AI visibility:', error);

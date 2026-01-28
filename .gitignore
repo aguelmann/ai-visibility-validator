@@ -23,5 +23,5 @@ manifest.json
 popup.html
 popup.js
 
-# Cloud function (already deployed)
-cloud-function/
+# Cloud function - node_modules only
+cloud-function/node_modules/

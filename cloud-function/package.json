@@ -1,0 +1,12 @@
+{
+  "name": "crux-api-proxy",
+  "version": "1.0.0",
+  "description": "Proxy for CrUX API calls from AI Visibility Validator extension",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx @google-cloud/functions-framework --target=getCruxData"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.0.0"
+  }
+}
