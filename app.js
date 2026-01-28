@@ -67,6 +67,7 @@ const TTFB_CATEGORIES = [
 const CLS_CATEGORIES = [
   {
     name: 'Good',
+    grade: 'A',
     maxValue: 0.1,
     color: '#25995c',
     description: 'High Vector Integrity',
@@ -75,6 +76,7 @@ const CLS_CATEGORIES = [
   },
   {
     name: 'Needs Improvement',
+    grade: 'C',
     minValue: 0.1,
     maxValue: 0.25,
     color: '#FFC107',
@@ -84,6 +86,7 @@ const CLS_CATEGORIES = [
   },
   {
     name: 'Poor',
+    grade: 'F',
     minValue: 0.25,
     color: '#F44336',
     description: 'RAG Chunking Failure',
@@ -96,6 +99,7 @@ const CLS_CATEGORIES = [
 const INP_CATEGORIES = [
   {
     name: 'Good',
+    grade: 'A',
     maxMs: 200,
     color: '#25995c',
     description: 'Agentic Success',
@@ -104,6 +108,7 @@ const INP_CATEGORIES = [
   },
   {
     name: 'Poor',
+    grade: 'F',
     minMs: 200,
     color: '#F44336',
     description: 'Agentic Friction',
@@ -349,6 +354,23 @@ function setupTabSwitching() {
   });
 }
 
+// Clear previous results
+function clearResults() {
+  // Clear overview tabs
+  document.getElementById('page-url').textContent = '';
+  document.getElementById('origin-url').textContent = '';
+  document.getElementById('page-overview-metrics').innerHTML = '';
+  document.getElementById('origin-overview-metrics').innerHTML = '';
+
+  // Clear detail tabs
+  document.getElementById('page-ttfb-detail').innerHTML = '';
+  document.getElementById('origin-ttfb-detail').innerHTML = '';
+  document.getElementById('page-cls-detail').innerHTML = '';
+  document.getElementById('origin-cls-detail').innerHTML = '';
+  document.getElementById('page-inp-detail').innerHTML = '';
+  document.getElementById('origin-inp-detail').innerHTML = '';
+}
+
 // Show error message
 function showError(message) {
   const errorDiv = document.getElementById('error');
@@ -404,6 +426,9 @@ function showResults(pageData, originData) {
 async function checkAIVisibility() {
   const loadingDiv = document.getElementById('loading');
   const urlInput = document.getElementById('url-input');
+
+  // Clear previous results
+  clearResults();
 
   // Show loading
   loadingDiv.classList.remove('hidden');
