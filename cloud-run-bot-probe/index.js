@@ -7,7 +7,7 @@ app.use(express.json({ limit: '200kb' }));
 const PORT = process.env.PORT || 8080;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_REDIRECTS = 5;
-const CONCURRENCY_LIMIT = 6;
+const CONCURRENCY_LIMIT = 1; // Sequential probing to avoid rate limiting
 const PROBE_TIMEOUT_MS = 12000; // Max time per bot probe
 
 const BOT_PROFILES = {

@@ -529,6 +529,56 @@ function showBotTtfbError(message) {
   }
 }
 
+function renderBotTtfbLoading() {
+  const tableEl = document.getElementById('bot-ttfb-table');
+  if (!tableEl) return;
+
+  const companies = {};
+  BOT_TTFB_PROFILES.forEach(bot => {
+    if (!companies[bot.company]) {
+      companies[bot.company] = [];
+    }
+    companies[bot.company].push(bot);
+  });
+
+  let html = '';
+  Object.keys(companies).forEach(company => {
+    html += `
+      <div class="bot-ttfb-company">
+        <h4>${company}</h4>
+        <div class="bot-ttfb-grid">
+          <div class="bot-ttfb-row">
+            <div class="bot-ttfb-cell bot-ttfb-header">Bot</div>
+            <div class="bot-ttfb-cell bot-ttfb-header">TTFB</div>
+            <div class="bot-ttfb-cell bot-ttfb-header">Status</div>
+          </div>
+    `;
+
+    companies[company].forEach(bot => {
+      html += `
+        <div class="bot-ttfb-row" data-bot-key="${bot.key}">
+          <div class="bot-ttfb-cell">
+            <strong>${bot.label}</strong>
+          </div>
+          <div class="bot-ttfb-cell">
+            <span class="bot-ttfb-loading">Testing...</span>
+          </div>
+          <div class="bot-ttfb-cell">
+            <span class="bot-ttfb-loading">—</span>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+  });
+
+  tableEl.innerHTML = html;
+}
+
 function renderBotTtfbResults(results) {
   const tableEl = document.getElementById('bot-ttfb-table');
   if (!tableEl) return;
@@ -545,28 +595,13 @@ function renderBotTtfbResults(results) {
     return;
   }
 
-  const companies = {};
-  results.forEach(result => {
-    if (!companies[result.company]) {
-      companies[result.company] = [];
-    }
-    companies[result.company].push(result);
-  });
+  // Animate results appearing one by one
+  results.forEach((result, index) => {
+    setTimeout(() => {
+      const row = tableEl.querySelector(`[data-bot-key="${result.botKey}"]`);
+      if (!row) return;
 
-  let html = '';
-  Object.keys(companies).forEach(company => {
-    html += `
-      <div class="bot-ttfb-company">
-        <h4>${company}</h4>
-        <div class="bot-ttfb-grid">
-          <div class="bot-ttfb-row">
-            <div class="bot-ttfb-cell bot-ttfb-header">Bot</div>
-            <div class="bot-ttfb-cell bot-ttfb-header">TTFB</div>
-            <div class="bot-ttfb-cell bot-ttfb-header">Status</div>
-          </div>
-    `;
-
-    companies[company].forEach(result => {
+      const cells = row.querySelectorAll('.bot-ttfb-cell');
       let ttfbContent = '—';
       let statusContent = '—';
       let meta = '';
@@ -590,25 +625,28 @@ function renderBotTtfbResults(results) {
         }
       }
 
-      html += `
-        <div class="bot-ttfb-row">
-          <div class="bot-ttfb-cell">
-            <strong>${result.label}</strong>
-            ${meta ? `<div class="bot-ttfb-meta">${meta}</div>` : ''}
-          </div>
-          <div class="bot-ttfb-cell">${ttfbContent}</div>
-          <div class="bot-ttfb-cell">${statusContent}</div>
-        </div>
-      `;
-    });
+      // Update the cells
+      if (cells[0]) {
+        cells[0].innerHTML = `
+          <strong>${result.label}</strong>
+          ${meta ? `<div class="bot-ttfb-meta">${meta}</div>` : ''}
+        `;
+      }
+      if (cells[1]) {
+        cells[1].innerHTML = ttfbContent;
+      }
+      if (cells[2]) {
+        cells[2].innerHTML = statusContent;
+      }
 
-    html += `
-        </div>
-      </div>
-    `;
+      // Add fade-in animation
+      row.style.opacity = '0.5';
+      setTimeout(() => {
+        row.style.transition = 'opacity 0.3s ease-in';
+        row.style.opacity = '1';
+      }, 10);
+    }, index * 100); // Stagger by 100ms
   });
-
-  tableEl.innerHTML = html;
 }
 
 async function fetchBotTtfb(url) {
@@ -618,8 +656,9 @@ async function fetchBotTtfb(url) {
   }
 
   try {
-    setBotTtfbLoading(true);
+    setBotTtfbLoading(false); // Hide generic loading message
     showBotTtfbError('');
+    renderBotTtfbLoading(); // Show skeleton with "Testing..." for each bot
     const response = await fetch(`${CONFIG.BOT_PROBE_URL}/probe`, {
       method: 'POST',
       headers: {

@@ -397,6 +397,21 @@ body {
   margin-top: 4px;
 }
 
+.bot-ttfb-loading {
+  color: #999;
+  font-style: italic;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /* Data Sections */
 .data-section {
   margin-bottom: 25px;
