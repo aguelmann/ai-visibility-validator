@@ -18,10 +18,14 @@ node_modules/
 .DS_Store
 Thumbs.db
 
-# Chrome Extension Files (not needed for web app)
-manifest.json
-popup.html
-popup.js
+# Documentation Archive
+docs-archive/
 
 # Cloud function - node_modules only
 cloud-function/node_modules/
+
+# Cloud Run - node_modules
+cloud-run-bot-probe/node_modules/
+
+# Claude settings (local only)
+.claude/settings.local.json

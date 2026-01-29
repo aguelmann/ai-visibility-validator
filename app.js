@@ -48,6 +48,17 @@ const AI_BOTS = [
   { userAgent: 'CCBot', company: 'Common Crawl', product: 'Open web crawl data (used by AI models)', category: 'Training' }
 ];
 
+const BOT_TTFB_PROFILES = [
+  { key: 'openai_gptbot', company: 'OpenAI', label: 'GPTBot' },
+  { key: 'openai_chatgpt_user', company: 'OpenAI', label: 'ChatGPT-User' },
+  { key: 'openai_searchbot', company: 'OpenAI', label: 'OAI-SearchBot' },
+  { key: 'anthropic_claudebot', company: 'Anthropic', label: 'ClaudeBot' },
+  { key: 'anthropic_claude_searchbot', company: 'Anthropic', label: 'Claude-SearchBot' },
+  { key: 'anthropic_claude_user', company: 'Anthropic', label: 'Claude-User' },
+  { key: 'perplexity_bot', company: 'Perplexity', label: 'PerplexityBot' },
+  { key: 'perplexity_user', company: 'Perplexity', label: 'Perplexity-User' }
+];
+
 // TTFB Categories based on CSV data
 const TTFB_CATEGORIES = [
   {
@@ -163,6 +174,9 @@ const INP_CATEGORIES = [
     primaryImpact: 'INP is for "Agents," not "Search." Agentic AI timeouts on slow buttons and abandons tasks, unlike humans who wait.'
   }
 ];
+
+let lastReportData = null;
+let lastBotTtfbData = null;
 
 // Get category for a given TTFB value
 function getTTFBCategory(ttfbMs) {
@@ -421,6 +435,20 @@ function clearResults() {
   document.getElementById('crawl-status-card').innerHTML = '';
   document.getElementById('bots-summary').innerHTML = '';
   document.getElementById('bots-list').innerHTML = '';
+  const botTable = document.getElementById('bot-ttfb-table');
+  if (botTable) {
+    botTable.innerHTML = '';
+  }
+  showBotTtfbError('');
+  setBotTtfbLoading(false);
+  lastBotTtfbData = null;
+  const updatedEl = document.getElementById('bot-ttfb-updated');
+  if (updatedEl) {
+    updatedEl.textContent = '';
+  }
+
+  lastReportData = null;
+  setDownloadButtonEnabled(false);
 }
 
 // Show error message
@@ -431,6 +459,15 @@ function showError(message) {
   errorDiv.classList.remove('hidden');
 
   document.getElementById('loading').classList.add('hidden');
+  showBotTtfbError('');
+  setBotTtfbLoading(false);
+  lastBotTtfbData = null;
+  const updatedEl = document.getElementById('bot-ttfb-updated');
+  if (updatedEl) {
+    updatedEl.textContent = '';
+  }
+  lastReportData = null;
+  setDownloadButtonEnabled(false);
 }
 
 // Show results
@@ -472,6 +509,687 @@ function showResults(pageData, originData) {
 
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('error').classList.add('hidden');
+}
+
+function setBotTtfbLoading(isLoading) {
+  const loadingEl = document.getElementById('bot-ttfb-loading');
+  if (!loadingEl) return;
+  loadingEl.classList.toggle('hidden', !isLoading);
+}
+
+function showBotTtfbError(message) {
+  const errorEl = document.getElementById('bot-ttfb-error');
+  if (!errorEl) return;
+  if (message) {
+    errorEl.textContent = message;
+    errorEl.classList.remove('hidden');
+  } else {
+    errorEl.textContent = '';
+    errorEl.classList.add('hidden');
+  }
+}
+
+function renderBotTtfbResults(results) {
+  const tableEl = document.getElementById('bot-ttfb-table');
+  if (!tableEl) return;
+
+  const updatedEl = document.getElementById('bot-ttfb-updated');
+  if (updatedEl && lastBotTtfbData?.generatedAt) {
+    updatedEl.textContent = `Last updated: ${formatDateTime(lastBotTtfbData.generatedAt)}`;
+  } else if (updatedEl) {
+    updatedEl.textContent = '';
+  }
+
+  if (!Array.isArray(results) || results.length === 0) {
+    tableEl.innerHTML = '<div class="bot-ttfb-status">No bot TTFB data available.</div>';
+    return;
+  }
+
+  const companies = {};
+  results.forEach(result => {
+    if (!companies[result.company]) {
+      companies[result.company] = [];
+    }
+    companies[result.company].push(result);
+  });
+
+  let html = '';
+  Object.keys(companies).forEach(company => {
+    html += `
+      <div class="bot-ttfb-company">
+        <h4>${company}</h4>
+        <div class="bot-ttfb-grid">
+          <div class="bot-ttfb-row">
+            <div class="bot-ttfb-cell bot-ttfb-header">Bot</div>
+            <div class="bot-ttfb-cell bot-ttfb-header">TTFB</div>
+            <div class="bot-ttfb-cell bot-ttfb-header">Status</div>
+          </div>
+    `;
+
+    companies[company].forEach(result => {
+      let ttfbContent = '—';
+      let statusContent = '—';
+      let meta = '';
+
+      if (result.error) {
+        ttfbContent = '<span class="bot-ttfb-badge" style="color:#F44336;">Error</span>';
+        statusContent = 'Failed';
+        meta = result.error;
+      } else if (typeof result.ttfbMs === 'number') {
+        const category = getTTFBCategory(result.ttfbMs);
+        const color = category?.color || '#25995c';
+        ttfbContent = `
+          <span class="bot-ttfb-badge" style="color:${color};">
+            ${result.ttfbMs} ms
+          </span>
+          <div class="bot-ttfb-meta">${category.name}${category.grade ? ` (${category.grade})` : ''}</div>
+        `;
+        statusContent = result.status ? `HTTP ${result.status}` : 'OK';
+        if (result.cached) {
+          meta = 'Cached (last 5 min)';
+        }
+      }
+
+      html += `
+        <div class="bot-ttfb-row">
+          <div class="bot-ttfb-cell">
+            <strong>${result.label}</strong>
+            ${meta ? `<div class="bot-ttfb-meta">${meta}</div>` : ''}
+          </div>
+          <div class="bot-ttfb-cell">${ttfbContent}</div>
+          <div class="bot-ttfb-cell">${statusContent}</div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+  });
+
+  tableEl.innerHTML = html;
+}
+
+async function fetchBotTtfb(url) {
+  if (!CONFIG.BOT_PROBE_URL || CONFIG.BOT_PROBE_URL === 'REPLACE_WITH_YOUR_BOT_PROBE_URL') {
+    showBotTtfbError('Bot TTFB probe URL not configured.');
+    return null;
+  }
+
+  try {
+    setBotTtfbLoading(true);
+    showBotTtfbError('');
+    const response = await fetch(`${CONFIG.BOT_PROBE_URL}/probe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url,
+        botKeys: BOT_TTFB_PROFILES.map(bot => bot.key)
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Bot probe failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Bot probe failed.');
+    }
+
+    lastBotTtfbData = {
+      generatedAt: data.generatedAt,
+      results: data.results || []
+    };
+
+    return data.results || [];
+  } catch (error) {
+    console.error('Bot TTFB probe error:', error);
+    showBotTtfbError(error.message || 'Failed to fetch bot TTFB.');
+    return null;
+  } finally {
+    setBotTtfbLoading(false);
+  }
+}
+
+async function runBotProbe(url) {
+  const results = await fetchBotTtfb(url);
+  if (results) {
+    renderBotTtfbResults(results);
+  } else {
+    renderBotTtfbResults([]);
+  }
+
+  if (lastReportData) {
+    lastReportData.botTtfb = lastBotTtfbData;
+  }
+}
+
+function setDownloadButtonEnabled(enabled) {
+  const downloadButton = document.getElementById('download-pdf-button');
+  if (!downloadButton) return;
+  downloadButton.disabled = !enabled;
+}
+
+function formatDateTime(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  });
+}
+
+function buildReportFileName(reportData) {
+  let host = 'report';
+  try {
+    host = new URL(reportData.pageData.url).hostname;
+  } catch (error) {
+    host = 'report';
+  }
+  const dateStamp = new Date(reportData.generatedAt).toISOString().slice(0, 10);
+  return `ai-visibility-report_${host}_${dateStamp}.pdf`;
+}
+
+function formatMetricSummary(metricType, metrics) {
+  const labelMap = {
+    ttfb: 'TTFB',
+    cls: 'CLS',
+    inp: 'INP'
+  };
+
+  const label = labelMap[metricType] || metricType.toUpperCase();
+
+  if (!metrics || metrics[metricType] === null || metrics[metricType] === undefined) {
+    return `${label}: No data`;
+  }
+
+  if (metricType === 'ttfb') {
+    const category = getTTFBCategory(metrics.ttfb);
+    const gradeText = category.grade ? `, ${category.grade}` : '';
+    return `${label}: ${metrics.ttfb}ms (${category.name}${gradeText})`;
+  }
+
+  if (metricType === 'cls') {
+    const clsValue = Number(metrics.cls).toFixed(3);
+    const category = getCLSCategory(metrics.cls);
+    const gradeText = category.grade ? `, ${category.grade}` : '';
+    return `${label}: ${clsValue} (${category.name}${gradeText})`;
+  }
+
+  if (metricType === 'inp') {
+    const category = getINPCategory(metrics.inp);
+    const gradeText = category.grade ? `, ${category.grade}` : '';
+    return `${label}: ${metrics.inp}ms (${category.name}${gradeText})`;
+  }
+
+  return `${label}: ${metrics[metricType]}`;
+}
+
+function wrapText(text, font, fontSize, maxWidth) {
+  if (!text) return [''];
+  const words = text.split(/\s+/);
+  const lines = [];
+  let currentLine = '';
+
+  const splitLongWord = (word) => {
+    const parts = [];
+    let chunk = '';
+    for (const char of word) {
+      const testChunk = chunk + char;
+      if (font.widthOfTextAtSize(testChunk, fontSize) <= maxWidth) {
+        chunk = testChunk;
+      } else {
+        if (chunk) parts.push(chunk);
+        chunk = char;
+      }
+    }
+    if (chunk) parts.push(chunk);
+    return parts;
+  };
+
+  words.forEach(word => {
+    if (font.widthOfTextAtSize(word, fontSize) > maxWidth) {
+      const longParts = splitLongWord(word);
+      longParts.forEach(part => {
+        if (currentLine) {
+          lines.push(currentLine);
+          currentLine = '';
+        }
+        lines.push(part);
+      });
+      return;
+    }
+
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+    if (testWidth <= maxWidth) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      currentLine = word;
+    }
+  });
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+}
+
+function addLinkAnnotation(page, pdfDoc, x, y, width, height, url) {
+  if (!url) return;
+
+  const { PDFName, PDFArray, PDFString } = PDFLib;
+  const context = pdfDoc.context;
+
+  const linkAnnotation = context.obj({
+    Type: 'Annot',
+    Subtype: 'Link',
+    Rect: [x, y, x + width, y + height],
+    Border: [0, 0, 0],
+    A: {
+      Type: 'Action',
+      S: 'URI',
+      URI: PDFString.of(url)
+    }
+  });
+
+  const linkAnnotationRef = context.register(linkAnnotation);
+
+  let annots = page.node.lookup(PDFName.of('Annots'), PDFArray);
+  if (!annots) {
+    annots = context.obj([]);
+    page.node.set(PDFName.of('Annots'), annots);
+  }
+
+  annots.push(linkAnnotationRef);
+}
+
+function hexToRgb(hex) {
+  if (!hex) return null;
+  const cleanHex = hex.replace('#', '').trim();
+  if (cleanHex.length !== 6) return null;
+  const num = parseInt(cleanHex, 16);
+  if (Number.isNaN(num)) return null;
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return { r: r / 255, g: g / 255, b: b / 255 };
+}
+
+async function generatePdfReport(reportData) {
+  if (!window.PDFLib || !PDFLib.PDFDocument) {
+    throw new Error('PDF library not loaded.');
+  }
+
+  const { PDFDocument, StandardFonts, rgb } = PDFLib;
+  const pdfDoc = await PDFDocument.create();
+  const pageSize = [612, 792];
+  let page = pdfDoc.addPage(pageSize);
+  const pageWidth = pageSize[0];
+  const pageHeight = pageSize[1];
+  const margin = 36;
+  const contentWidth = pageWidth - margin * 2;
+  let y = pageHeight - margin;
+
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const colors = {
+    text: rgb(0.06, 0.07, 0.09),
+    muted: rgb(0.4, 0.4, 0.4),
+    accent: rgb(0.145, 0.6, 0.36),
+    line: rgb(0.86, 0.88, 0.9)
+  };
+
+  const lineGap = 1.2;
+
+  const addPage = () => {
+    page = pdfDoc.addPage(pageSize);
+    y = pageHeight - margin;
+  };
+
+  const ensureSpace = (heightNeeded) => {
+    if (y - heightNeeded < margin) {
+      addPage();
+    }
+  };
+
+  const drawTextLine = (text, size, font, color) => {
+    const lineHeight = size * lineGap;
+    ensureSpace(lineHeight);
+    page.drawText(text, {
+      x: margin,
+      y: y - size,
+      size,
+      font,
+      color
+    });
+    y -= lineHeight;
+  };
+
+  const drawParagraph = (text, size, font, color) => {
+    const lines = wrapText(text, font, size, contentWidth);
+    lines.forEach(line => drawTextLine(line, size, font, color));
+  };
+
+  const drawWrappedTextAt = (text, x, yTop, size, font, color, maxWidth) => {
+    const lines = wrapText(text, font, size, maxWidth);
+    let cursor = yTop;
+    lines.forEach(line => {
+      page.drawText(line, {
+        x,
+        y: cursor - size,
+        size,
+        font,
+        color
+      });
+      cursor -= size * lineGap;
+    });
+    return cursor;
+  };
+
+  const drawDivider = () => {
+    ensureSpace(12);
+    page.drawLine({
+      start: { x: margin, y: y - 4 },
+      end: { x: pageWidth - margin, y: y - 4 },
+      thickness: 1,
+      color: colors.line
+    });
+    y -= 14;
+  };
+
+  const drawSectionTitle = (title) => {
+    drawTextLine(title, 12, fontBold, colors.accent);
+    y -= 2;
+  };
+
+  const drawMetricCard = (title, metrics, metricType, x, yTop, width, height) => {
+    const baseColor = rgb(0.95, 0.96, 0.97);
+    const borderColor = colors.line;
+    let valueText = 'No data';
+    let badgeText = 'No data';
+    let headerColor = rgb(0.63, 0.65, 0.68);
+    let valueColor = colors.text;
+    let unitText = '';
+
+    if (metrics && metrics[metricType] !== null && metrics[metricType] !== undefined) {
+      let category = null;
+      if (metricType === 'ttfb') {
+        category = getTTFBCategory(metrics.ttfb);
+        valueText = `${metrics.ttfb}`;
+        unitText = 'ms';
+      } else if (metricType === 'cls') {
+        category = getCLSCategory(metrics.cls);
+        valueText = Number(metrics.cls).toFixed(3);
+      } else if (metricType === 'inp') {
+        category = getINPCategory(metrics.inp);
+        valueText = `${metrics.inp}`;
+        unitText = 'ms';
+      }
+
+      if (category) {
+        const rgbColor = hexToRgb(category.color);
+        headerColor = rgbColor ? rgb(rgbColor.r, rgbColor.g, rgbColor.b) : colors.accent;
+        badgeText = category.grade ? `${category.name} (${category.grade})` : category.name;
+        valueColor = headerColor;
+      }
+    }
+
+    page.drawRectangle({
+      x,
+      y: yTop - height,
+      width,
+      height,
+      color: baseColor,
+      borderColor,
+      borderWidth: 1
+    });
+
+    const headerHeight = 14;
+    page.drawRectangle({
+      x,
+      y: yTop - headerHeight,
+      width,
+      height: headerHeight,
+      color: headerColor
+    });
+
+    page.drawText(title, {
+      x: x + 8,
+      y: yTop - headerHeight + 3,
+      size: 8,
+      font: fontBold,
+      color: rgb(1, 1, 1)
+    });
+
+    page.drawText(badgeText, {
+      x: x + 8,
+      y: yTop - headerHeight - 9,
+      size: 7,
+      font: fontRegular,
+      color: colors.muted
+    });
+
+    page.drawText(valueText, {
+      x: x + 8,
+      y: yTop - headerHeight - 26,
+      size: 14,
+      font: fontBold,
+      color: valueColor
+    });
+
+    if (unitText) {
+      const valueWidth = fontBold.widthOfTextAtSize(valueText, 14);
+      page.drawText(unitText, {
+        x: x + 8 + valueWidth + 4,
+        y: yTop - headerHeight - 22,
+        size: 8,
+        font: fontRegular,
+        color: colors.muted
+      });
+    }
+  };
+
+  const drawMetricRow = (metricType, metricLabel) => {
+    const rowHeight = 58;
+    const gap = 12;
+    const cardWidth = (contentWidth - gap) / 2;
+    const labelHeight = 10 * lineGap;
+    ensureSpace(rowHeight + labelHeight + 8);
+
+    drawTextLine(metricLabel, 10, fontBold, colors.text);
+    const rowTop = y;
+
+    drawMetricCard('Page', reportData.pageData.metrics, metricType, margin, rowTop, cardWidth, rowHeight);
+    drawMetricCard('Website', reportData.originData.metrics, metricType, margin + cardWidth + gap, rowTop, cardWidth, rowHeight);
+
+    y = rowTop - rowHeight - 12;
+  };
+
+  drawTextLine('AI & LLM Visibility Validator', 16, fontBold, colors.accent);
+  drawTextLine('AI Visibility Report', 10, fontRegular, colors.muted);
+  drawDivider();
+
+  drawSectionTitle('Report Details');
+  drawTextLine(`Generated: ${formatDateTime(reportData.generatedAt)}`, 9, fontRegular, colors.text);
+  drawParagraph(`Report URL: ${reportData.pageData.url}`, 9, fontRegular, colors.text);
+  drawParagraph(`Origin: ${reportData.originData.url}`, 9, fontRegular, colors.text);
+  drawTextLine('Source: Chrome UX Report (CrUX), p75 desktop', 9, fontRegular, colors.muted);
+  drawDivider();
+
+  drawSectionTitle('Performance Metrics');
+  drawMetricRow('ttfb', 'Time To First Byte (TTFB)');
+  drawMetricRow('cls', 'Cumulative Layout Shift (CLS)');
+  drawMetricRow('inp', 'Interaction to Next Paint (INP)');
+  drawDivider();
+
+  drawSectionTitle('Simulated Bot TTFB');
+  if (reportData.botTtfb && Array.isArray(reportData.botTtfb.results) && reportData.botTtfb.results.length > 0) {
+    const groupedBots = {};
+    reportData.botTtfb.results.forEach(result => {
+      if (!groupedBots[result.company]) {
+        groupedBots[result.company] = [];
+      }
+      groupedBots[result.company].push(result);
+    });
+
+    Object.keys(groupedBots).forEach(company => {
+      drawTextLine(company, 9, fontBold, colors.text);
+      groupedBots[company].forEach(result => {
+        let detailText = `${result.label}: `;
+        if (result.error) {
+          detailText += 'Error';
+        } else if (typeof result.ttfbMs === 'number') {
+          const category = getTTFBCategory(result.ttfbMs);
+          const gradeLabel = category.grade ? ` ${category.grade}` : '';
+          detailText += `${result.ttfbMs}ms (${category.name}${gradeLabel})`;
+        } else {
+          detailText += 'No data';
+        }
+        drawTextLine(detailText, 8, fontRegular, colors.muted);
+      });
+    });
+  } else {
+    drawTextLine('Bot TTFB data unavailable.', 9, fontRegular, colors.muted);
+  }
+
+  drawDivider();
+
+  drawSectionTitle('AI Bot Crawlability');
+  if (reportData.crawlData) {
+    drawTextLine(`Robots.txt: ${reportData.crawlData.robotsExists ? 'Found' : 'Not Found'}`, 9, fontRegular, colors.text);
+    drawTextLine(`Allowed bots: ${reportData.crawlData.summary.allowed} / ${reportData.crawlData.summary.total}`, 9, fontRegular, colors.text);
+
+    if (reportData.crawlData.summary.blocked > 0) {
+      const blockedBots = reportData.crawlData.bots
+        .filter(bot => !bot.allowed)
+        .map(bot => bot.userAgent)
+        .join(', ');
+      drawParagraph(`Blocked bots (${reportData.crawlData.summary.blocked}): ${blockedBots}`, 9, fontRegular, colors.text);
+    } else {
+      drawTextLine('Blocked bots: None', 9, fontRegular, colors.text);
+    }
+
+    if (!reportData.crawlData.robotsExists) {
+      drawTextLine('Note: No robots.txt found. Default allow applies.', 9, fontRegular, colors.muted);
+    }
+  } else {
+    drawTextLine('Crawlability data unavailable.', 9, fontRegular, colors.muted);
+  }
+
+  drawDivider();
+  const ctaHeight = 96;
+  const ctaPadding = 12;
+  ensureSpace(ctaHeight + 12);
+
+  const ctaTop = y;
+  const ctaBottom = ctaTop - ctaHeight;
+
+  page.drawRectangle({
+    x: margin,
+    y: ctaBottom,
+    width: contentWidth,
+    height: ctaHeight,
+    color: rgb(0.95, 0.98, 0.96),
+    borderColor: colors.accent,
+    borderWidth: 1
+  });
+
+  const ctaContentX = margin + ctaPadding;
+  const ctaContentWidth = contentWidth - ctaPadding * 2;
+  let ctaCursor = ctaTop - ctaPadding;
+
+  ctaCursor = drawWrappedTextAt('Need Help?', ctaContentX, ctaCursor, 11, fontBold, colors.accent, ctaContentWidth);
+  ctaCursor = drawWrappedTextAt('Hi, I\'m Andre Guelmann, an SEO & Website Growth expert with more than 15 years of successfully helping companies and startups of all sizes improve their visibility through Technical SEO and Website Optimization.', ctaContentX, ctaCursor, 9, fontRegular, colors.text, ctaContentWidth);
+  ctaCursor -= 4;
+  ctaCursor = drawWrappedTextAt('If you need help understanding or improving these numbers, get in touch and let\'s see if I can help you.', ctaContentX, ctaCursor, 9, fontRegular, colors.text, ctaContentWidth);
+
+  const buttonLabel = 'Get In Touch';
+  const buttonUrl = 'https://andrglmn.me/AI-Extension-Contact';
+  const buttonHeight = 20;
+  const buttonWidth = 132;
+  const buttonX = ctaContentX;
+  const buttonY = ctaBottom + ctaPadding;
+
+  page.drawRectangle({
+    x: buttonX,
+    y: buttonY,
+    width: buttonWidth,
+    height: buttonHeight,
+    color: colors.accent,
+    borderColor: colors.accent,
+    borderWidth: 1
+  });
+
+  const buttonTextWidth = fontBold.widthOfTextAtSize(buttonLabel, 9);
+  const buttonTextX = buttonX + (buttonWidth - buttonTextWidth) / 2;
+  const buttonTextY = buttonY + (buttonHeight - 9) / 2 + 1;
+
+  page.drawText(buttonLabel, {
+    x: buttonTextX,
+    y: buttonTextY,
+    size: 9,
+    font: fontBold,
+    color: rgb(1, 1, 1)
+  });
+
+  addLinkAnnotation(page, pdfDoc, buttonX, buttonY, buttonWidth, buttonHeight, buttonUrl);
+
+  y = ctaBottom - 18;
+
+  drawDivider();
+  const toolUrl = 'https://ai-check.andreguelmann.com/';
+  const footerText = `Report generated by ${toolUrl}`;
+  drawTextLine(footerText, 8, fontRegular, colors.muted);
+  const footerTextWidth = fontRegular.widthOfTextAtSize(footerText, 8);
+  const footerY = y + 8 * lineGap - 8;
+  addLinkAnnotation(page, pdfDoc, margin, footerY, footerTextWidth, 10, toolUrl);
+
+  return await pdfDoc.save();
+}
+
+async function downloadPdfReport() {
+  if (!lastReportData) {
+    showError('Run an analysis first to generate a PDF report.');
+    return;
+  }
+
+  const downloadButton = document.getElementById('download-pdf-button');
+  const originalLabel = downloadButton ? downloadButton.textContent : null;
+
+  if (downloadButton) {
+    downloadButton.disabled = true;
+    downloadButton.textContent = 'Generating PDF...';
+  }
+
+  try {
+    const pdfBytes = await generatePdfReport(lastReportData);
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = buildReportFileName(lastReportData);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    showError('Failed to generate PDF. Please try again.');
+  } finally {
+    if (downloadButton) {
+      downloadButton.disabled = false;
+      downloadButton.textContent = originalLabel || 'Download PDF';
+    }
+  }
 }
 
 // Parse robots.txt content into structured rules
@@ -723,11 +1441,13 @@ function renderCrawlabilityResults(crawlData) {
   botsListDiv.innerHTML = botsHTML;
 }
 
+
 // Check crawlability
 async function checkCrawlability(url) {
   try {
     const crawlData = await analyzeCrawlability(url);
     renderCrawlabilityResults(crawlData);
+    return crawlData;
   } catch (error) {
     console.error('Error checking crawlability:', error);
     // Show error in the crawlability tab
@@ -737,6 +1457,7 @@ async function checkCrawlability(url) {
     `;
     document.getElementById('bots-summary').innerHTML = '';
     document.getElementById('bots-list').innerHTML = '';
+    return null;
   }
 }
 
@@ -779,10 +1500,12 @@ async function checkAIVisibility() {
     const urlObj = new URL(currentUrl);
     const origin = urlObj.origin;
 
-    // Query CrUX API for both page and origin
-    const [pageResponse, originResponse] = await Promise.allSettled([
+    // Query CrUX API for both page and origin, and bot TTFB in parallel
+    const [pageResponse, originResponse, botProbeResponse, crawlResponse] = await Promise.allSettled([
       queryCruxAPI(currentUrl, 'DESKTOP'),
-      queryCruxAPI(origin, 'DESKTOP')
+      queryCruxAPI(origin, 'DESKTOP'),
+      fetchBotTtfb(currentUrl),
+      checkCrawlability(origin)
     ]);
 
     const pageData = {
@@ -805,8 +1528,27 @@ async function checkAIVisibility() {
       showResults(pageData, originData);
     }
 
-    // Check crawlability (run regardless of CrUX data availability)
-    await checkCrawlability(origin);
+    let crawlData = null;
+    if (crawlResponse.status === 'fulfilled') {
+      crawlData = crawlResponse.value;
+    }
+
+    if (botProbeResponse.status === 'fulfilled') {
+      renderBotTtfbResults(botProbeResponse.value || []);
+    } else {
+      renderBotTtfbResults([]);
+    }
+
+    if (hasPageData || hasOriginData) {
+      lastReportData = {
+        generatedAt: new Date().toISOString(),
+        pageData,
+        originData,
+        crawlData,
+        botTtfb: lastBotTtfbData
+      };
+      setDownloadButtonEnabled(true);
+    }
 
   } catch (error) {
     console.error('Error checking AI visibility:', error);
@@ -820,9 +1562,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const checkButton = document.getElementById('check-button');
   const urlInput = document.getElementById('url-input');
+  const downloadButton = document.getElementById('download-pdf-button');
+  const botRetryButton = document.getElementById('bot-ttfb-retry');
 
   // Check on button click
   checkButton.addEventListener('click', checkAIVisibility);
+
+  if (downloadButton) {
+    downloadButton.addEventListener('click', downloadPdfReport);
+  }
+
+  if (botRetryButton) {
+    botRetryButton.addEventListener('click', async () => {
+      let currentUrl = urlInput.value.trim();
+      if (!currentUrl) {
+        showBotTtfbError('Enter a URL to run the bot probe.');
+        return;
+      }
+      if (!currentUrl.match(/^https?:\/\//i)) {
+        currentUrl = 'https://' + currentUrl;
+      }
+      try {
+        new URL(currentUrl);
+      } catch (error) {
+        showBotTtfbError('Enter a valid URL to run the bot probe.');
+        return;
+      }
+      await runBotProbe(currentUrl);
+    });
+  }
+
+  setDownloadButtonEnabled(false);
 
   // Check on Enter key
   urlInput.addEventListener('keypress', (e) => {
