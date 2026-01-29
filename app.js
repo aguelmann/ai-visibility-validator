@@ -683,16 +683,18 @@ async function fetchBotTtfb(url) {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ url, botKeys })
+          body: JSON.stringify({ url, botKeys }),
+          signal: AbortSignal.timeout(30000) // 30 second timeout
         });
 
         if (!response.ok) {
-          throw new Error(`Batch ${batchIndex + 1} failed: ${response.status}`);
+          const errorText = await response.text().catch(() => 'Unknown error');
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
         if (!data.success) {
-          throw new Error(data.error || `Batch ${batchIndex + 1} failed.`);
+          throw new Error(data.error || 'Probe request failed');
         }
 
         // Add results from this batch
