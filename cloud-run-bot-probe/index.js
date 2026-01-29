@@ -99,6 +99,24 @@ app.use((req, res, next) => {
   next();
 });
 
+app.options('/probe', (req, res) => {
+  const origin = req.headers.origin;
+  res.setHeader('Access-Control-Allow-Origin', allowOrigin(origin));
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.status(204).end();
+});
+
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  res.setHeader('Access-Control-Allow-Origin', allowOrigin(origin));
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.status(204).end();
+});
+
 function normalizeUrl(rawUrl) {
   let normalized = rawUrl.trim();
   if (!normalized) return null;

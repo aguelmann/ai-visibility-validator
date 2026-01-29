@@ -677,6 +677,9 @@ async function fetchBotTtfb(url) {
       const batch = batches[batchIndex];
       const botKeys = batch.map(bot => bot.key);
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       try {
         const response = await fetch(`${CONFIG.BOT_PROBE_URL}/probe`, {
           method: 'POST',
@@ -684,7 +687,7 @@ async function fetchBotTtfb(url) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ url, botKeys }),
-          signal: AbortSignal.timeout(30000) // 30 second timeout
+          signal: controller.signal
         });
 
         if (!response.ok) {
@@ -725,6 +728,8 @@ async function fetchBotTtfb(url) {
 
         // Still update UI with partial results
         renderBotTtfbResults(allResults);
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
 
