@@ -7,8 +7,8 @@ app.use(express.json({ limit: '200kb' }));
 const PORT = process.env.PORT || 8080;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_REDIRECTS = 5;
-const CONCURRENCY_LIMIT = 1; // Sequential probing to avoid rate limiting
-const PROBE_TIMEOUT_MS = 12000; // Max time per bot probe
+const CONCURRENCY_LIMIT = 2; // Limit concurrency to avoid overwhelming the service
+const REQUEST_TIMEOUT_MS = 5000; // 5s per request
 
 const BOT_PROFILES = {
   openai_gptbot: {
@@ -114,15 +114,6 @@ function normalizeUrl(rawUrl) {
   }
 }
 
-function withTimeout(promise, timeoutMs, errorMessage) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(errorMessage || 'Operation timed out')), timeoutMs)
-    )
-  ]);
-}
-
 async function measureTtfb(url, userAgent) {
   const startTime = Date.now();
   let currentUrl = url;
@@ -139,8 +130,8 @@ async function measureTtfb(url, userAgent) {
         'pragma': 'no-cache'
       },
       maxRedirections: 0,
-      headersTimeout: 10000,
-      bodyTimeout: 10000
+      headersTimeout: REQUEST_TIMEOUT_MS,
+      bodyTimeout: REQUEST_TIMEOUT_MS
     });
 
     const status = response.statusCode;
@@ -238,11 +229,7 @@ app.post('/probe', async (req, res) => {
       }
 
       try {
-        const probe = await withTimeout(
-          measureTtfb(url, profile.userAgent),
-          PROBE_TIMEOUT_MS,
-          'Request timeout'
-        );
+        const probe = await measureTtfb(url, profile.userAgent);
         const result = {
           botKey,
           company: profile.company,

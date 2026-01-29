@@ -595,57 +595,59 @@ function renderBotTtfbResults(results) {
     return;
   }
 
-  // Animate results appearing one by one
-  results.forEach((result, index) => {
+  // Update results (called progressively as batches complete)
+  results.forEach((result) => {
+    const row = tableEl.querySelector(`[data-bot-key="${result.botKey}"]`);
+    if (!row) return;
+
+    // Skip if already rendered (check if it still has loading class)
+    const loadingSpan = row.querySelector('.bot-ttfb-loading');
+    if (!loadingSpan) return; // Already rendered
+
+    const cells = row.querySelectorAll('.bot-ttfb-cell');
+    let ttfbContent = '—';
+    let statusContent = '—';
+    let meta = '';
+
+    if (result.error) {
+      ttfbContent = '<span class="bot-ttfb-badge" style="color:#F44336;">Error</span>';
+      statusContent = 'Failed';
+      meta = result.error;
+    } else if (typeof result.ttfbMs === 'number') {
+      const category = getTTFBCategory(result.ttfbMs);
+      const color = category?.color || '#25995c';
+      ttfbContent = `
+        <span class="bot-ttfb-badge" style="color:${color};">
+          ${result.ttfbMs} ms
+        </span>
+        <div class="bot-ttfb-meta">${category.name}${category.grade ? ` (${category.grade})` : ''}</div>
+      `;
+      statusContent = result.status ? `HTTP ${result.status}` : 'OK';
+      if (result.cached) {
+        meta = 'Cached (last 5 min)';
+      }
+    }
+
+    // Update the cells
+    if (cells[0]) {
+      cells[0].innerHTML = `
+        <strong>${result.label}</strong>
+        ${meta ? `<div class="bot-ttfb-meta">${meta}</div>` : ''}
+      `;
+    }
+    if (cells[1]) {
+      cells[1].innerHTML = ttfbContent;
+    }
+    if (cells[2]) {
+      cells[2].innerHTML = statusContent;
+    }
+
+    // Add fade-in animation
+    row.style.opacity = '0.5';
     setTimeout(() => {
-      const row = tableEl.querySelector(`[data-bot-key="${result.botKey}"]`);
-      if (!row) return;
-
-      const cells = row.querySelectorAll('.bot-ttfb-cell');
-      let ttfbContent = '—';
-      let statusContent = '—';
-      let meta = '';
-
-      if (result.error) {
-        ttfbContent = '<span class="bot-ttfb-badge" style="color:#F44336;">Error</span>';
-        statusContent = 'Failed';
-        meta = result.error;
-      } else if (typeof result.ttfbMs === 'number') {
-        const category = getTTFBCategory(result.ttfbMs);
-        const color = category?.color || '#25995c';
-        ttfbContent = `
-          <span class="bot-ttfb-badge" style="color:${color};">
-            ${result.ttfbMs} ms
-          </span>
-          <div class="bot-ttfb-meta">${category.name}${category.grade ? ` (${category.grade})` : ''}</div>
-        `;
-        statusContent = result.status ? `HTTP ${result.status}` : 'OK';
-        if (result.cached) {
-          meta = 'Cached (last 5 min)';
-        }
-      }
-
-      // Update the cells
-      if (cells[0]) {
-        cells[0].innerHTML = `
-          <strong>${result.label}</strong>
-          ${meta ? `<div class="bot-ttfb-meta">${meta}</div>` : ''}
-        `;
-      }
-      if (cells[1]) {
-        cells[1].innerHTML = ttfbContent;
-      }
-      if (cells[2]) {
-        cells[2].innerHTML = statusContent;
-      }
-
-      // Add fade-in animation
-      row.style.opacity = '0.5';
-      setTimeout(() => {
-        row.style.transition = 'opacity 0.3s ease-in';
-        row.style.opacity = '1';
-      }, 10);
-    }, index * 100); // Stagger by 100ms
+      row.style.transition = 'opacity 0.3s ease-in';
+      row.style.opacity = '1';
+    }, 10);
   });
 }
 
@@ -656,35 +658,85 @@ async function fetchBotTtfb(url) {
   }
 
   try {
-    setBotTtfbLoading(false); // Hide generic loading message
+    setBotTtfbLoading(false);
     showBotTtfbError('');
     renderBotTtfbLoading(); // Show skeleton with "Testing..." for each bot
-    const response = await fetch(`${CONFIG.BOT_PROBE_URL}/probe`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url,
-        botKeys: BOT_TTFB_PROFILES.map(bot => bot.key)
-      })
-    });
 
-    if (!response.ok) {
-      throw new Error(`Bot probe failed: ${response.status}`);
+    // Split bots into batches of 2 for reliability
+    const BATCH_SIZE = 2;
+    const batches = [];
+    for (let i = 0; i < BOT_TTFB_PROFILES.length; i += BATCH_SIZE) {
+      batches.push(BOT_TTFB_PROFILES.slice(i, i + BATCH_SIZE));
     }
 
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Bot probe failed.');
+    const allResults = [];
+    let hasError = false;
+
+    // Fetch batches sequentially and update UI progressively
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex];
+      const botKeys = batch.map(bot => bot.key);
+
+      try {
+        const response = await fetch(`${CONFIG.BOT_PROBE_URL}/probe`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ url, botKeys })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Batch ${batchIndex + 1} failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.error || `Batch ${batchIndex + 1} failed.`);
+        }
+
+        // Add results from this batch
+        if (data.results && data.results.length > 0) {
+          allResults.push(...data.results);
+
+          // Update UI progressively with current results
+          lastBotTtfbData = {
+            generatedAt: data.generatedAt,
+            results: allResults
+          };
+          renderBotTtfbResults(allResults);
+        }
+      } catch (error) {
+        console.error(`Batch ${batchIndex + 1} error:`, error);
+        hasError = true;
+
+        // Add error entries for failed batch
+        batch.forEach(bot => {
+          allResults.push({
+            botKey: bot.key,
+            company: bot.company,
+            label: bot.label,
+            error: error.message || 'Request failed',
+            cached: false
+          });
+        });
+
+        // Still update UI with partial results
+        renderBotTtfbResults(allResults);
+      }
     }
 
     lastBotTtfbData = {
-      generatedAt: data.generatedAt,
-      results: data.results || []
+      generatedAt: new Date().toISOString(),
+      results: allResults
     };
 
-    return data.results || [];
+    if (hasError && allResults.length === 0) {
+      showBotTtfbError('All bot probes failed. Please try again.');
+      return null;
+    }
+
+    return allResults;
   } catch (error) {
     console.error('Bot TTFB probe error:', error);
     showBotTtfbError(error.message || 'Failed to fetch bot TTFB.');
