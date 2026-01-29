@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 8080;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_REDIRECTS = 5;
 const CONCURRENCY_LIMIT = 6;
+const PROBE_TIMEOUT_MS = 12000; // Max time per bot probe
 
 const BOT_PROFILES = {
   openai_gptbot: {
@@ -113,6 +114,15 @@ function normalizeUrl(rawUrl) {
   }
 }
 
+function withTimeout(promise, timeoutMs, errorMessage) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage || 'Operation timed out')), timeoutMs)
+    )
+  ]);
+}
+
 async function measureTtfb(url, userAgent) {
   const startTime = Date.now();
   let currentUrl = url;
@@ -129,8 +139,8 @@ async function measureTtfb(url, userAgent) {
         'pragma': 'no-cache'
       },
       maxRedirections: 0,
-      headersTimeout: 15000,
-      bodyTimeout: 15000
+      headersTimeout: 10000,
+      bodyTimeout: 10000
     });
 
     const status = response.statusCode;
@@ -228,7 +238,11 @@ app.post('/probe', async (req, res) => {
       }
 
       try {
-        const probe = await measureTtfb(url, profile.userAgent);
+        const probe = await withTimeout(
+          measureTtfb(url, profile.userAgent),
+          PROBE_TIMEOUT_MS,
+          'Request timeout'
+        );
         const result = {
           botKey,
           company: profile.company,
