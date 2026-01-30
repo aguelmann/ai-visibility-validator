@@ -295,123 +295,6 @@ body {
   line-height: 1.6;
 }
 
-/* ===========================
-   BOT TTFB TABLE
-   =========================== */
-.bot-ttfb-status {
-  padding: 10px 12px;
-  border-radius: 4px;
-  background-color: #fff;
-  border: 2px solid #ddd;
-  font-size: 12px;
-  color: #555;
-  margin-bottom: 10px;
-}
-
-.bot-ttfb-status.error {
-  border-color: #F44336;
-  color: #c62828;
-  background-color: #fee;
-}
-
-.bot-ttfb-table {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.bot-ttfb-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.bot-ttfb-actions .download-button {
-  padding: 8px 14px;
-  font-size: 10px;
-}
-
-.bot-ttfb-updated {
-  font-size: 11px;
-  color: #666;
-}
-
-.bot-ttfb-company {
-  background-color: #fff;
-  border: 2px solid #ddd;
-  border-radius: 4px;
-  padding: 12px;
-}
-
-.bot-ttfb-company h4 {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  color: #101218;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-}
-
-.bot-ttfb-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr 0.8fr;
-  gap: 8px;
-}
-
-.bot-ttfb-row {
-  display: contents;
-}
-
-.bot-ttfb-cell {
-  padding: 8px 10px;
-  border-radius: 4px;
-  background-color: #f9f9f9;
-  font-size: 12px;
-  color: #101218;
-}
-
-.bot-ttfb-header {
-  background-color: #101218;
-  color: #fff;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-}
-
-.bot-ttfb-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 700;
-  font-family: 'Montserrat', sans-serif;
-}
-
-.bot-ttfb-meta {
-  font-size: 10px;
-  color: #666;
-  margin-top: 4px;
-}
-
-.bot-ttfb-loading {
-  color: #999;
-  font-style: italic;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
 /* Data Sections */
 .data-section {
   margin-bottom: 25px;
@@ -932,15 +815,6 @@ body {
 
   .metrics-grid-overview {
     grid-template-columns: 1fr;
-  }
-
-  .bot-ttfb-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .bot-ttfb-actions {
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .bots-summary-grid {

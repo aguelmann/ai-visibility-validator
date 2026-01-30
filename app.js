@@ -48,17 +48,6 @@ const AI_BOTS = [
   { userAgent: 'CCBot', company: 'Common Crawl', product: 'Open web crawl data (used by AI models)', category: 'Training' }
 ];
 
-const BOT_TTFB_PROFILES = [
-  { key: 'openai_gptbot', company: 'OpenAI', label: 'GPTBot' },
-  { key: 'openai_chatgpt_user', company: 'OpenAI', label: 'ChatGPT-User' },
-  { key: 'openai_searchbot', company: 'OpenAI', label: 'OAI-SearchBot' },
-  { key: 'anthropic_claudebot', company: 'Anthropic', label: 'ClaudeBot' },
-  { key: 'anthropic_claude_searchbot', company: 'Anthropic', label: 'Claude-SearchBot' },
-  { key: 'anthropic_claude_user', company: 'Anthropic', label: 'Claude-User' },
-  { key: 'perplexity_bot', company: 'Perplexity', label: 'PerplexityBot' },
-  { key: 'perplexity_user', company: 'Perplexity', label: 'Perplexity-User' }
-];
-
 // TTFB Categories based on CSV data
 const TTFB_CATEGORIES = [
   {
@@ -176,7 +165,6 @@ const INP_CATEGORIES = [
 ];
 
 let lastReportData = null;
-let lastBotTtfbData = null;
 
 // Get category for a given TTFB value
 function getTTFBCategory(ttfbMs) {
@@ -435,18 +423,6 @@ function clearResults() {
   document.getElementById('crawl-status-card').innerHTML = '';
   document.getElementById('bots-summary').innerHTML = '';
   document.getElementById('bots-list').innerHTML = '';
-  const botTable = document.getElementById('bot-ttfb-table');
-  if (botTable) {
-    botTable.innerHTML = '';
-  }
-  showBotTtfbError('');
-  setBotTtfbLoading(false);
-  lastBotTtfbData = null;
-  const updatedEl = document.getElementById('bot-ttfb-updated');
-  if (updatedEl) {
-    updatedEl.textContent = '';
-  }
-
   lastReportData = null;
   setDownloadButtonEnabled(false);
 }
@@ -459,13 +435,6 @@ function showError(message) {
   errorDiv.classList.remove('hidden');
 
   document.getElementById('loading').classList.add('hidden');
-  showBotTtfbError('');
-  setBotTtfbLoading(false);
-  lastBotTtfbData = null;
-  const updatedEl = document.getElementById('bot-ttfb-updated');
-  if (updatedEl) {
-    updatedEl.textContent = '';
-  }
   lastReportData = null;
   setDownloadButtonEnabled(false);
 }
@@ -509,262 +478,6 @@ function showResults(pageData, originData) {
 
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('error').classList.add('hidden');
-}
-
-function setBotTtfbLoading(isLoading) {
-  const loadingEl = document.getElementById('bot-ttfb-loading');
-  if (!loadingEl) return;
-  loadingEl.classList.toggle('hidden', !isLoading);
-}
-
-function showBotTtfbError(message) {
-  const errorEl = document.getElementById('bot-ttfb-error');
-  if (!errorEl) return;
-  if (message) {
-    errorEl.textContent = message;
-    errorEl.classList.remove('hidden');
-  } else {
-    errorEl.textContent = '';
-    errorEl.classList.add('hidden');
-  }
-}
-
-function renderBotTtfbLoading() {
-  const tableEl = document.getElementById('bot-ttfb-table');
-  if (!tableEl) return;
-
-  const companies = {};
-  BOT_TTFB_PROFILES.forEach(bot => {
-    if (!companies[bot.company]) {
-      companies[bot.company] = [];
-    }
-    companies[bot.company].push(bot);
-  });
-
-  let html = '';
-  Object.keys(companies).forEach(company => {
-    html += `
-      <div class="bot-ttfb-company">
-        <h4>${company}</h4>
-        <div class="bot-ttfb-grid">
-          <div class="bot-ttfb-row">
-            <div class="bot-ttfb-cell bot-ttfb-header">Bot</div>
-            <div class="bot-ttfb-cell bot-ttfb-header">TTFB</div>
-            <div class="bot-ttfb-cell bot-ttfb-header">Status</div>
-          </div>
-    `;
-
-    companies[company].forEach(bot => {
-      html += `
-        <div class="bot-ttfb-row" data-bot-key="${bot.key}">
-          <div class="bot-ttfb-cell">
-            <strong>${bot.label}</strong>
-          </div>
-          <div class="bot-ttfb-cell">
-            <span class="bot-ttfb-loading">Testing...</span>
-          </div>
-          <div class="bot-ttfb-cell">
-            <span class="bot-ttfb-loading">—</span>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `
-        </div>
-      </div>
-    `;
-  });
-
-  tableEl.innerHTML = html;
-}
-
-function renderBotTtfbResults(results) {
-  const tableEl = document.getElementById('bot-ttfb-table');
-  if (!tableEl) return;
-
-  const updatedEl = document.getElementById('bot-ttfb-updated');
-  if (updatedEl && lastBotTtfbData?.generatedAt) {
-    updatedEl.textContent = `Last updated: ${formatDateTime(lastBotTtfbData.generatedAt)}`;
-  } else if (updatedEl) {
-    updatedEl.textContent = '';
-  }
-
-  if (!Array.isArray(results) || results.length === 0) {
-    tableEl.innerHTML = '<div class="bot-ttfb-status">No bot TTFB data available.</div>';
-    return;
-  }
-
-  // Update results (called progressively as batches complete)
-  results.forEach((result) => {
-    const row = tableEl.querySelector(`[data-bot-key="${result.botKey}"]`);
-    if (!row) return;
-
-    // Skip if already rendered (check if it still has loading class)
-    const loadingSpan = row.querySelector('.bot-ttfb-loading');
-    if (!loadingSpan) return; // Already rendered
-
-    const cells = row.querySelectorAll('.bot-ttfb-cell');
-    let ttfbContent = '—';
-    let statusContent = '—';
-    let meta = '';
-
-    if (result.error) {
-      ttfbContent = '<span class="bot-ttfb-badge" style="color:#F44336;">Error</span>';
-      statusContent = 'Failed';
-      meta = result.error;
-    } else if (typeof result.ttfbMs === 'number') {
-      const category = getTTFBCategory(result.ttfbMs);
-      const color = category?.color || '#25995c';
-      ttfbContent = `
-        <span class="bot-ttfb-badge" style="color:${color};">
-          ${result.ttfbMs} ms
-        </span>
-        <div class="bot-ttfb-meta">${category.name}${category.grade ? ` (${category.grade})` : ''}</div>
-      `;
-      statusContent = result.status ? `HTTP ${result.status}` : 'OK';
-      if (result.cached) {
-        meta = 'Cached (last 5 min)';
-      }
-    }
-
-    // Update the cells
-    if (cells[0]) {
-      cells[0].innerHTML = `
-        <strong>${result.label}</strong>
-        ${meta ? `<div class="bot-ttfb-meta">${meta}</div>` : ''}
-      `;
-    }
-    if (cells[1]) {
-      cells[1].innerHTML = ttfbContent;
-    }
-    if (cells[2]) {
-      cells[2].innerHTML = statusContent;
-    }
-
-    // Add fade-in animation
-    row.style.opacity = '0.5';
-    setTimeout(() => {
-      row.style.transition = 'opacity 0.3s ease-in';
-      row.style.opacity = '1';
-    }, 10);
-  });
-}
-
-async function fetchBotTtfb(url) {
-  // Use proxy to avoid CORS issues (server-side bot probing)
-  if (!CONFIG.PROXY_URL || CONFIG.PROXY_URL === 'REPLACE_WITH_YOUR_CLOUD_FUNCTION_URL') {
-    showBotTtfbError('Proxy URL not configured.');
-    return null;
-  }
-
-  try {
-    setBotTtfbLoading(false);
-    showBotTtfbError('');
-    renderBotTtfbLoading(); // Show skeleton with "Testing..." for each bot
-
-    // Split bots into batches of 2 for reliability
-    const BATCH_SIZE = 2;
-    const batches = [];
-    for (let i = 0; i < BOT_TTFB_PROFILES.length; i += BATCH_SIZE) {
-      batches.push(BOT_TTFB_PROFILES.slice(i, i + BATCH_SIZE));
-    }
-
-    const allResults = [];
-    let hasError = false;
-
-    // Fetch batches sequentially and update UI progressively
-    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-      const batch = batches[batchIndex];
-      const botKeys = batch.map(bot => bot.key);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-      try {
-        const response = await fetch(CONFIG.PROXY_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ url, botKeys, action: 'botProbe' }),
-          signal: controller.signal
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => 'Unknown error');
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-
-        const data = await response.json();
-        if (!data.success) {
-          throw new Error(data.error || 'Probe request failed');
-        }
-
-        // Add results from this batch
-        if (data.results && data.results.length > 0) {
-          allResults.push(...data.results);
-
-          // Update UI progressively with current results
-          lastBotTtfbData = {
-            generatedAt: data.generatedAt,
-            results: allResults
-          };
-          renderBotTtfbResults(allResults);
-        }
-      } catch (error) {
-        console.error(`Batch ${batchIndex + 1} error:`, error);
-        hasError = true;
-
-        // Add error entries for failed batch
-        batch.forEach(bot => {
-          allResults.push({
-            botKey: bot.key,
-            company: bot.company,
-            label: bot.label,
-            error: error.message || 'Request failed',
-            cached: false
-          });
-        });
-
-        // Still update UI with partial results
-        renderBotTtfbResults(allResults);
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    }
-
-    lastBotTtfbData = {
-      generatedAt: new Date().toISOString(),
-      results: allResults
-    };
-
-    if (hasError && allResults.length === 0) {
-      showBotTtfbError('All bot probes failed. Please try again.');
-      return null;
-    }
-
-    return allResults;
-  } catch (error) {
-    console.error('Bot TTFB probe error:', error);
-    showBotTtfbError(error.message || 'Failed to fetch bot TTFB.');
-    return null;
-  } finally {
-    setBotTtfbLoading(false);
-  }
-}
-
-async function runBotProbe(url) {
-  const results = await fetchBotTtfb(url);
-  if (results) {
-    renderBotTtfbResults(results);
-  } else {
-    renderBotTtfbResults([]);
-  }
-
-  if (lastReportData) {
-    lastReportData.botTtfb = lastBotTtfbData;
-  }
 }
 
 function setDownloadButtonEnabled(enabled) {
@@ -1128,38 +841,6 @@ async function generatePdfReport(reportData) {
   drawMetricRow('ttfb', 'Time To First Byte (TTFB)');
   drawMetricRow('cls', 'Cumulative Layout Shift (CLS)');
   drawMetricRow('inp', 'Interaction to Next Paint (INP)');
-  drawDivider();
-
-  drawSectionTitle('Simulated Bot TTFB');
-  if (reportData.botTtfb && Array.isArray(reportData.botTtfb.results) && reportData.botTtfb.results.length > 0) {
-    const groupedBots = {};
-    reportData.botTtfb.results.forEach(result => {
-      if (!groupedBots[result.company]) {
-        groupedBots[result.company] = [];
-      }
-      groupedBots[result.company].push(result);
-    });
-
-    Object.keys(groupedBots).forEach(company => {
-      drawTextLine(company, 9, fontBold, colors.text);
-      groupedBots[company].forEach(result => {
-        let detailText = `${result.label}: `;
-        if (result.error) {
-          detailText += 'Error';
-        } else if (typeof result.ttfbMs === 'number') {
-          const category = getTTFBCategory(result.ttfbMs);
-          const gradeLabel = category.grade ? ` ${category.grade}` : '';
-          detailText += `${result.ttfbMs}ms (${category.name}${gradeLabel})`;
-        } else {
-          detailText += 'No data';
-        }
-        drawTextLine(detailText, 8, fontRegular, colors.muted);
-      });
-    });
-  } else {
-    drawTextLine('Bot TTFB data unavailable.', 9, fontRegular, colors.muted);
-  }
-
   drawDivider();
 
   drawSectionTitle('AI Bot Crawlability');
@@ -1599,11 +1280,10 @@ async function checkAIVisibility() {
     const urlObj = new URL(currentUrl);
     const origin = urlObj.origin;
 
-    // Query CrUX API for both page and origin, and bot TTFB in parallel
-    const [pageResponse, originResponse, botProbeResponse, crawlResponse] = await Promise.allSettled([
+    // Query CrUX API for both page and origin, and crawlability in parallel
+    const [pageResponse, originResponse, crawlResponse] = await Promise.allSettled([
       queryCruxAPI(currentUrl, 'DESKTOP'),
       queryCruxAPI(origin, 'DESKTOP'),
-      fetchBotTtfb(currentUrl),
       checkCrawlability(origin)
     ]);
 
@@ -1632,19 +1312,12 @@ async function checkAIVisibility() {
       crawlData = crawlResponse.value;
     }
 
-    if (botProbeResponse.status === 'fulfilled') {
-      renderBotTtfbResults(botProbeResponse.value || []);
-    } else {
-      renderBotTtfbResults([]);
-    }
-
     if (hasPageData || hasOriginData) {
       lastReportData = {
         generatedAt: new Date().toISOString(),
         pageData,
         originData,
-        crawlData,
-        botTtfb: lastBotTtfbData
+        crawlData
       };
       setDownloadButtonEnabled(true);
     }
@@ -1662,33 +1335,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const checkButton = document.getElementById('check-button');
   const urlInput = document.getElementById('url-input');
   const downloadButton = document.getElementById('download-pdf-button');
-  const botRetryButton = document.getElementById('bot-ttfb-retry');
 
   // Check on button click
   checkButton.addEventListener('click', checkAIVisibility);
 
   if (downloadButton) {
     downloadButton.addEventListener('click', downloadPdfReport);
-  }
-
-  if (botRetryButton) {
-    botRetryButton.addEventListener('click', async () => {
-      let currentUrl = urlInput.value.trim();
-      if (!currentUrl) {
-        showBotTtfbError('Enter a URL to run the bot probe.');
-        return;
-      }
-      if (!currentUrl.match(/^https?:\/\//i)) {
-        currentUrl = 'https://' + currentUrl;
-      }
-      try {
-        new URL(currentUrl);
-      } catch (error) {
-        showBotTtfbError('Enter a valid URL to run the bot probe.');
-        return;
-      }
-      await runBotProbe(currentUrl);
-    });
   }
 
   setDownloadButtonEnabled(false);

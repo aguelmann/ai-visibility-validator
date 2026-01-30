@@ -7,9 +7,5 @@ const CONFIG = {
   PROXY_URL: 'https://crux-api-proxy-658532897815.us-central1.run.app',
 
   // Same proxy URL used for robots.txt fetching (bypasses CORS)
-  ROBOTS_PROXY_URL: 'https://crux-api-proxy-658532897815.us-central1.run.app',
-
-  // Bot TTFB probe (Cloud Run)
-  // Example: 'https://bot-ttfb-probe-xxxxx-uc.a.run.app'
-  BOT_PROBE_URL: 'https://bot-ttfb-probe-658532897815.us-central1.run.app'
+  ROBOTS_PROXY_URL: 'https://crux-api-proxy-658532897815.us-central1.run.app'
 };
