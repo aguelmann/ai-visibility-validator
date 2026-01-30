@@ -652,8 +652,9 @@ function renderBotTtfbResults(results) {
 }
 
 async function fetchBotTtfb(url) {
-  if (!CONFIG.BOT_PROBE_URL || CONFIG.BOT_PROBE_URL === 'REPLACE_WITH_YOUR_BOT_PROBE_URL') {
-    showBotTtfbError('Bot TTFB probe URL not configured.');
+  // Use proxy to avoid CORS issues (server-side bot probing)
+  if (!CONFIG.PROXY_URL || CONFIG.PROXY_URL === 'REPLACE_WITH_YOUR_CLOUD_FUNCTION_URL') {
+    showBotTtfbError('Proxy URL not configured.');
     return null;
   }
 
@@ -681,12 +682,12 @@ async function fetchBotTtfb(url) {
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
       try {
-        const response = await fetch(`${CONFIG.BOT_PROBE_URL}/probe`, {
+        const response = await fetch(CONFIG.PROXY_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ url, botKeys }),
+          body: JSON.stringify({ url, botKeys, action: 'botProbe' }),
           signal: controller.signal
         });
 

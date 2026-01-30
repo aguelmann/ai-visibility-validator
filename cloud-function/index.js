@@ -24,6 +24,53 @@ functions.http('getCruxData', async (req, res) => {
   try {
     const { url, formFactor, metrics, action } = req.body;
 
+    // Handle bot probe action (server-side bot TTFB testing)
+    if (action === 'botProbe') {
+      const { botKeys } = req.body;
+      const BOT_PROBE_URL = 'https://bot-ttfb-probe-tbohkm5aaq-uc.a.run.app/probe';
+
+      if (!url) {
+        res.status(400).json({ error: 'URL is required for bot probe' });
+        return;
+      }
+
+      if (!botKeys || !Array.isArray(botKeys)) {
+        res.status(400).json({ error: 'botKeys array is required' });
+        return;
+      }
+
+      try {
+        // Call the bot probe service (server-to-server, no CORS issues)
+        const probeResponse = await fetch(BOT_PROBE_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ url, botKeys })
+        });
+
+        if (!probeResponse.ok) {
+          const errorText = await probeResponse.text().catch(() => 'Unknown error');
+          res.status(probeResponse.status).json({
+            error: 'Bot probe failed',
+            status: probeResponse.status,
+            details: errorText
+          });
+          return;
+        }
+
+        const probeData = await probeResponse.json();
+        res.status(200).json(probeData);
+        return;
+      } catch (error) {
+        res.status(500).json({
+          error: 'Failed to call bot probe service',
+          details: error.message
+        });
+        return;
+      }
+    }
+
     // Handle robots.txt fetch action
     if (action === 'fetchRobotsTxt') {
       if (!url) {
