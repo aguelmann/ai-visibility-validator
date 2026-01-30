@@ -11,5 +11,5 @@ const CONFIG = {
 
   // Bot TTFB probe (Cloud Run)
   // Example: 'https://bot-ttfb-probe-xxxxx-uc.a.run.app'
-  BOT_PROBE_URL: 'https://bot-ttfb-probe-tbohkm5aaq-uc.a.run.app'
+  BOT_PROBE_URL: 'https://bot-ttfb-probe-658532897815.us-central1.run.app'
 };

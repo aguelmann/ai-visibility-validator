@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 8080;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_REDIRECTS = 5;
 const CONCURRENCY_LIMIT = 2; // Limit concurrency to avoid overwhelming the service
-const REQUEST_TIMEOUT_MS = 5000; // 5s per request
+const REQUEST_TIMEOUT_MS = 15000; // 15s per request (increased for slow websites)
 
 const BOT_PROFILES = {
   openai_gptbot: {

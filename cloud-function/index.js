@@ -27,7 +27,7 @@ functions.http('getCruxData', async (req, res) => {
     // Handle bot probe action (server-side bot TTFB testing)
     if (action === 'botProbe') {
       const { botKeys } = req.body;
-      const BOT_PROBE_URL = 'https://bot-ttfb-probe-tbohkm5aaq-uc.a.run.app/probe';
+      const BOT_PROBE_URL = 'https://bot-ttfb-probe-658532897815.us-central1.run.app/probe';
 
       if (!url) {
         res.status(400).json({ error: 'URL is required for bot probe' });
