@@ -16,6 +16,7 @@ const MAX_EVALUATE_RETRIES = 2;
 const QUIET_WINDOW_MS = 1200;
 const STABLE_TIMEOUT_MS = 8000;
 const TOTAL_TIMEOUT_MS = 45000;
+const STRICT_MODE = process.env.STRICT_MODE ? process.env.STRICT_MODE.toLowerCase() !== 'false' : true;
 
 const cache = new Map();
 
@@ -483,6 +484,69 @@ async function extractContent(page) {
   }, { maxElements: MAX_ELEMENTS, maxTextChars: MAX_TEXT_CHARS });
 }
 
+async function extractContentFast(page) {
+  return page.evaluate(({ maxElements, maxTextChars }) => {
+    const analysis = {
+      elements: [],
+      totalWords: 0,
+      url: window.location.href,
+      timestamp: new Date().toISOString()
+    };
+
+    if (!document || !document.body) {
+      return analysis;
+    }
+
+    const bodyText = document.body.innerText || '';
+    const words = bodyText.trim().split(/\s+/).filter(Boolean);
+    analysis.totalWords = words.length;
+
+    const selector = 'h1,h2,h3,h4,h5,h6,p,li,a,button,label,summary,figcaption,blockquote';
+    const elements = document.querySelectorAll(selector);
+
+    for (const el of elements) {
+      if (analysis.elements.length >= maxElements) break;
+      try {
+        const rawText = (el.innerText || el.textContent || '').trim();
+        if (!rawText) continue;
+
+        const wordsInEl = rawText.split(/\s+/).filter(Boolean);
+        const wordCount = wordsInEl.length;
+        if (!wordCount) continue;
+
+        const style = window.getComputedStyle(el);
+        const isVisible = !(
+          style.display === 'none' ||
+          style.visibility === 'hidden' ||
+          style.opacity === '0' ||
+          el.hidden
+        );
+
+        if (!isVisible) continue;
+
+        const tagName = el.tagName ? el.tagName.toLowerCase() : 'text';
+        const className = el.className || '';
+        const id = el.id || '';
+        const text = rawText.length > maxTextChars ? `${rawText.substring(0, maxTextChars)}...` : rawText;
+
+        analysis.elements.push({
+          text,
+          wordCount,
+          isVisible,
+          category: categorizeElement(tagName, className),
+          tagName,
+          className,
+          id
+        });
+      } catch (e) {
+        continue;
+      }
+    }
+
+    return analysis;
+  }, { maxElements: MAX_ELEMENTS, maxTextChars: MAX_TEXT_CHARS });
+}
+
 async function extractContentWithRetry(page) {
   let lastError = null;
 
@@ -520,7 +584,20 @@ async function extractContentSafe(page, options) {
     return await extractContentWithRetry(page);
   } catch (error) {
     log(`[${label}] live DOM extraction failed, falling back`, error.message || String(error));
-    warnings.push(`[${label}] Live DOM extraction failed; used HTML snapshot fallback.`);
+  }
+
+  try {
+    const fastResult = await extractContentFast(page);
+    warnings.push(`[${label}] Live DOM extraction failed; used fast DOM extraction.`);
+    return fastResult;
+  } catch (error) {
+    log(`[${label}] fast DOM extraction failed, falling back`, error.message || String(error));
+    warnings.push(`[${label}] Fast DOM extraction failed.`);
+  }
+
+  if (STRICT_MODE) {
+    warnings.push(`[${label}] Strict mode enabled; HTML snapshot fallback skipped.`);
+    return buildEmptyAnalysis(fallbackUrl || safePageUrl(page, fallbackUrl));
   }
 
   const snapshot = await getHtmlSnapshot(page, label, log, fallbackUrl);
