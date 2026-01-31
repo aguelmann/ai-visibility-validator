@@ -11,6 +11,7 @@ const WAIT_AFTER_LOAD_MS = 2000;
 const MAX_ELEMENTS = 4000;
 const MAX_TEXT_CHARS = 280;
 const MAX_LIST_ITEMS = 20;
+const MAX_EVALUATE_RETRIES = 2;
 
 const cache = new Map();
 
@@ -213,6 +214,37 @@ async function extractContent(page) {
   }, { maxElements: MAX_ELEMENTS, maxTextChars: MAX_TEXT_CHARS });
 }
 
+async function extractContentWithRetry(page) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= MAX_EVALUATE_RETRIES; attempt += 1) {
+    try {
+      return await extractContent(page);
+    } catch (error) {
+      lastError = error;
+      const message = String(error?.message || error);
+      const isContextError = message.includes('callback is no longer runnable') ||
+        message.includes('Execution context was destroyed') ||
+        message.includes('Cannot find context') ||
+        message.includes('Target closed');
+
+      if (!isContextError || attempt === MAX_EVALUATE_RETRIES) {
+        break;
+      }
+
+      try {
+        await page.waitForLoadState('domcontentloaded', { timeout: 5000 });
+      } catch (waitError) {
+        // Best-effort; retry anyway.
+      }
+
+      await page.waitForTimeout(500);
+    }
+  }
+
+  throw lastError;
+}
+
 async function analyzeUrl(url) {
   const browser = await chromium.launch({
     args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -231,8 +263,8 @@ async function analyzeUrl(url) {
     await disabledPage.goto(url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS });
     await disabledPage.waitForTimeout(WAIT_AFTER_LOAD_MS);
 
-    const jsEnabled = await extractContent(enabledPage);
-    const jsDisabled = await extractContent(disabledPage);
+    const jsEnabled = await extractContentWithRetry(enabledPage);
+    const jsDisabled = await extractContentWithRetry(disabledPage);
 
     const diff = compareContent(jsEnabled, jsDisabled);
     const enabledWords = jsEnabled.totalWords || 0;
