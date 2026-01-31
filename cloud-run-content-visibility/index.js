@@ -225,6 +225,47 @@ function extractContentFromHtml(html, url) {
   const body = $('body')[0];
   if (!body) return analysis;
 
+  const hiddenClassMatchers = [
+    'hidden',
+    'sr-only',
+    'sr_only',
+    'visually-hidden',
+    'visuallyhidden',
+    'screen-reader',
+    'screenreader',
+    'a11y-hidden'
+  ];
+
+  const hasHiddenClass = (className) => {
+    if (!className) return false;
+    const lower = className.toLowerCase();
+    return hiddenClassMatchers.some(match => lower.includes(match));
+  };
+
+  const hasHiddenAttr = (node) => {
+    if (!node || !node.attribs) return false;
+    if (Object.prototype.hasOwnProperty.call(node.attribs, 'hidden')) return true;
+    const ariaHidden = node.attribs['aria-hidden'];
+    if (ariaHidden && ariaHidden.toLowerCase() === 'true') return true;
+    const styleAttr = (node.attribs.style || '').toLowerCase();
+    if (styleAttr.includes('display:none') || styleAttr.includes('visibility:hidden')) {
+      return true;
+    }
+    const className = node.attribs.class || '';
+    if (hasHiddenClass(className)) return true;
+    if (node.attribs.type && node.attribs.type.toLowerCase() === 'hidden') return true;
+    return false;
+  };
+
+  const isHiddenByAncestors = (node) => {
+    let current = node;
+    while (current) {
+      if (hasHiddenAttr(current)) return true;
+      current = current.parent;
+    }
+    return false;
+  };
+
   const walk = (node) => {
     if (!node || analysis.elements.length >= MAX_ELEMENTS) return;
 
@@ -233,13 +274,12 @@ function extractContentFromHtml(html, url) {
       if (!rawText) return;
       const parent = node.parent;
       const tagName = parent && parent.name ? parent.name.toLowerCase() : 'text';
-      if (['script', 'style', 'noscript'].includes(tagName)) {
+      if (['script', 'style', 'noscript', 'template'].includes(tagName)) {
         return;
       }
       const className = parent && parent.attribs ? parent.attribs.class || '' : '';
       const id = parent && parent.attribs ? parent.attribs.id || '' : '';
-      const styleAttr = parent && parent.attribs ? (parent.attribs.style || '').toLowerCase() : '';
-      const isVisible = !(styleAttr.includes('display:none') || styleAttr.includes('visibility:hidden'));
+      const isVisible = !isHiddenByAncestors(parent);
       const words = rawText.split(/\s+/).filter(Boolean);
       const wordCount = words.length;
       if (!wordCount) return;
