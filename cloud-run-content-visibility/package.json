@@ -1,0 +1,17 @@
+{
+  "name": "content-visibility-analyzer",
+  "version": "1.0.0",
+  "description": "Cloud Run service to compare content with JS on vs off.",
+  "main": "index.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "playwright": "^1.42.0"
+  }
+}

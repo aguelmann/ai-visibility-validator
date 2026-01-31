@@ -57,6 +57,10 @@
           <span class="nav-icon">⚡</span>
           <span class="nav-label">TTFB</span>
         </li>
+        <li class="nav-item" data-tab="visibility">
+          <span class="nav-icon">🧾</span>
+          <span class="nav-label">Content</span>
+        </li>
         <li class="nav-item" data-tab="cls">
           <span class="nav-icon">📐</span>
           <span class="nav-label">CLS</span>
@@ -166,6 +170,30 @@
           <div class="cta-section">
             <p class="cta-text">Need help improving your website's AI visibility?</p>
             <a href="https://andrglmn.me/AI-Extension-Contact" target="_blank" class="cta-button">Get Expert Help</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Content Visibility -->
+      <div id="tab-visibility" class="tab-content">
+        <div class="tab-inner">
+          <h2>Content Visibility (JS On vs JS Off)</h2>
+          <p class="metric-intro">Compare what users see with JavaScript enabled versus what AI bots see with JavaScript disabled.</p>
+
+          <div id="visibility-loading" class="hidden content-visibility-status">Analyzing JS on/off visibility...</div>
+          <div id="visibility-error" class="hidden content-visibility-status error"></div>
+
+          <div id="visibility-summary" class="content-visibility-summary"></div>
+
+          <div class="content-visibility-grid">
+            <div class="content-visibility-column">
+              <h3>Lost Content (JS Off)</h3>
+              <div id="visibility-lost" class="content-visibility-list"></div>
+            </div>
+            <div class="content-visibility-column">
+              <h3>Gained Content (JS Off)</h3>
+              <div id="visibility-gained" class="content-visibility-list"></div>
+            </div>
           </div>
         </div>
       </div>

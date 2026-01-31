@@ -108,6 +108,7 @@ p {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
 }
 
 .nav-logo {
@@ -140,15 +141,21 @@ p {
   color: #25995c;
 }
 
-.cta-nav {
-  background: #25995c;
-  color: white !important;
-  padding: 8px 20px;
-  border-radius: 6px;
+.nav-toggle {
+  display: none;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
 }
 
-.cta-nav:hover {
-  background: #1e7a49;
+.nav-toggle-bar {
+  width: 20px;
+  height: 2px;
+  background: #1a202c;
+  display: block;
+  margin: 4px 0;
 }
 
 /* Hero Section */
@@ -800,12 +807,36 @@ p {
 }
 
 @media (max-width: 768px) {
+  .nav-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
   .nav-links {
-    gap: 15px;
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 20px;
+    right: 20px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    padding: 14px 16px;
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    z-index: 1200;
+  }
+
+  .nav-links.open {
+    display: flex;
   }
 
   .nav-links a {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
   }
 
   .hero-title {
@@ -906,10 +937,6 @@ p {
   }
 
   .logo-text {
-    display: none;
-  }
-
-  .nav-links {
-    display: none;
+    font-size: 0.95rem;
   }
 }

@@ -423,6 +423,14 @@ function clearResults() {
   document.getElementById('crawl-status-card').innerHTML = '';
   document.getElementById('bots-summary').innerHTML = '';
   document.getElementById('bots-list').innerHTML = '';
+  const visibilitySummary = document.getElementById('visibility-summary');
+  const visibilityLost = document.getElementById('visibility-lost');
+  const visibilityGained = document.getElementById('visibility-gained');
+  if (visibilitySummary) visibilitySummary.innerHTML = '';
+  if (visibilityLost) visibilityLost.innerHTML = '';
+  if (visibilityGained) visibilityGained.innerHTML = '';
+  showContentVisibilityError('');
+  setContentVisibilityLoading(false);
   lastReportData = null;
   setDownloadButtonEnabled(false);
 }
@@ -435,6 +443,8 @@ function showError(message) {
   errorDiv.classList.remove('hidden');
 
   document.getElementById('loading').classList.add('hidden');
+  showContentVisibilityError('');
+  setContentVisibilityLoading(false);
   lastReportData = null;
   setDownloadButtonEnabled(false);
 }
@@ -478,6 +488,120 @@ function showResults(pageData, originData) {
 
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('error').classList.add('hidden');
+}
+
+function setContentVisibilityLoading(isLoading) {
+  const loadingEl = document.getElementById('visibility-loading');
+  if (!loadingEl) return;
+  loadingEl.classList.toggle('hidden', !isLoading);
+}
+
+function showContentVisibilityError(message) {
+  const errorEl = document.getElementById('visibility-error');
+  if (!errorEl) return;
+  if (message) {
+    errorEl.textContent = message;
+    errorEl.classList.remove('hidden');
+  } else {
+    errorEl.textContent = '';
+    errorEl.classList.add('hidden');
+  }
+}
+
+function renderContentVisibilityResults(data) {
+  const summaryEl = document.getElementById('visibility-summary');
+  const lostEl = document.getElementById('visibility-lost');
+  const gainedEl = document.getElementById('visibility-gained');
+
+  if (!summaryEl || !lostEl || !gainedEl) return;
+
+  if (!data || !data.summary) {
+    summaryEl.innerHTML = '';
+    lostEl.innerHTML = '<div class="content-visibility-meta">No data available.</div>';
+    gainedEl.innerHTML = '<div class="content-visibility-meta">No data available.</div>';
+    return;
+  }
+
+  const { enabledWords, disabledWords, difference, hiddenPercent } = data.summary;
+  const diffClass = difference > 0 ? 'positive' : difference < 0 ? 'negative' : '';
+  const diffValue = `${difference > 0 ? '+' : ''}${difference.toLocaleString()}`;
+
+  summaryEl.innerHTML = `
+    <div class="content-visibility-card">
+      <h4>JS Enabled Words</h4>
+      <div class="content-visibility-value">${enabledWords.toLocaleString()}</div>
+    </div>
+    <div class="content-visibility-card">
+      <h4>JS Disabled Words</h4>
+      <div class="content-visibility-value">${disabledWords.toLocaleString()}</div>
+    </div>
+    <div class="content-visibility-card">
+      <h4>Difference</h4>
+      <div class="content-visibility-value ${diffClass}">${diffValue}</div>
+    </div>
+    <div class="content-visibility-card">
+      <h4>Hidden %</h4>
+      <div class="content-visibility-value">${hiddenPercent.toLocaleString()}%</div>
+    </div>
+  `;
+
+  const lostItems = data.diff?.lostContent || [];
+  const gainedItems = data.diff?.gainedContent || [];
+
+  lostEl.innerHTML = lostItems.length
+    ? lostItems.map(item => `
+        <div class="content-visibility-item lost">
+          <div class="content-visibility-meta">${item.wordCount} words • ${item.tagName}</div>
+          <div class="content-visibility-text">${item.text}</div>
+        </div>
+      `).join('')
+    : '<div class="content-visibility-meta">No lost content detected.</div>';
+
+  gainedEl.innerHTML = gainedItems.length
+    ? gainedItems.map(item => `
+        <div class="content-visibility-item gained">
+          <div class="content-visibility-meta">${item.wordCount} words • ${item.tagName}</div>
+          <div class="content-visibility-text">${item.text}</div>
+        </div>
+      `).join('')
+    : '<div class="content-visibility-meta">No gained content detected.</div>';
+}
+
+async function fetchContentVisibility(url) {
+  if (!CONFIG.CONTENT_VISIBILITY_URL || CONFIG.CONTENT_VISIBILITY_URL === 'REPLACE_WITH_YOUR_CONTENT_VISIBILITY_URL') {
+    showContentVisibilityError('Content visibility URL not configured.');
+    return null;
+  }
+
+  try {
+    setContentVisibilityLoading(true);
+    showContentVisibilityError('');
+    const response = await fetch(`${CONFIG.CONTENT_VISIBILITY_URL}/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Content visibility failed.');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Content visibility error:', error);
+    showContentVisibilityError(error.message || 'Failed to fetch content visibility.');
+    return null;
+  } finally {
+    setContentVisibilityLoading(false);
+  }
 }
 
 function setDownloadButtonEnabled(enabled) {
@@ -826,6 +950,16 @@ async function generatePdfReport(reportData) {
     y = rowTop - rowHeight - 12;
   };
 
+  const normalizeVisibilityText = (text) => {
+    if (!text) return '';
+    return text.replace(/\s+/g, ' ').trim();
+  };
+
+  const truncateVisibilityText = (text, maxLength) => {
+    if (!text || text.length <= maxLength) return text;
+    return `${text.slice(0, Math.max(0, maxLength - 3)).trim()}...`;
+  };
+
   drawTextLine('AI & LLM Visibility Validator', 16, fontBold, colors.accent);
   drawTextLine('AI Visibility Report', 10, fontRegular, colors.muted);
   drawDivider();
@@ -863,6 +997,47 @@ async function generatePdfReport(reportData) {
     }
   } else {
     drawTextLine('Crawlability data unavailable.', 9, fontRegular, colors.muted);
+  }
+
+  drawDivider();
+  drawSectionTitle('Content Visibility (JS On vs Off)');
+  if (reportData.contentVisibility && reportData.contentVisibility.summary) {
+    const { enabledWords, disabledWords, difference, hiddenPercent } = reportData.contentVisibility.summary;
+    const diffValue = `${difference > 0 ? '+' : ''}${difference.toLocaleString()}`;
+    drawParagraph(
+      `JS enabled words: ${enabledWords.toLocaleString()} | JS disabled words: ${disabledWords.toLocaleString()} | Difference: ${diffValue} | Hidden: ${hiddenPercent.toLocaleString()}%`,
+      9,
+      fontRegular,
+      colors.text
+    );
+
+    const maxItems = 2;
+    const lostItems = reportData.contentVisibility.diff?.lostContent || [];
+    const gainedItems = reportData.contentVisibility.diff?.gainedContent || [];
+
+    const drawVisibilityItems = (title, items) => {
+      drawTextLine(title, 9, fontBold, colors.text);
+      if (!items.length) {
+        drawTextLine('None detected.', 8, fontRegular, colors.muted);
+        return;
+      }
+
+      items.slice(0, maxItems).forEach((item) => {
+        const wordCount = item.wordCount ?? 0;
+        const tagName = item.tagName ? item.tagName.toLowerCase() : 'text';
+        const metaLine = `${wordCount} words - ${tagName}`;
+        drawTextLine(metaLine, 8, fontRegular, colors.muted);
+        const rawText = truncateVisibilityText(normalizeVisibilityText(item.text), 180);
+        if (rawText) {
+          drawParagraph(`- ${rawText}`, 8, fontRegular, colors.text);
+        }
+      });
+    };
+
+    drawVisibilityItems('Top content removed when JS is off', lostItems);
+    drawVisibilityItems('Top content added when JS is off', gainedItems);
+  } else {
+    drawTextLine('Content visibility data unavailable.', 9, fontRegular, colors.muted);
   }
 
   drawDivider();
@@ -1280,11 +1455,12 @@ async function checkAIVisibility() {
     const urlObj = new URL(currentUrl);
     const origin = urlObj.origin;
 
-    // Query CrUX API for both page and origin, and crawlability in parallel
-    const [pageResponse, originResponse, crawlResponse] = await Promise.allSettled([
+    // Query CrUX API for both page and origin, crawlability, and content visibility in parallel
+    const [pageResponse, originResponse, crawlResponse, visibilityResponse] = await Promise.allSettled([
       queryCruxAPI(currentUrl, 'DESKTOP'),
       queryCruxAPI(origin, 'DESKTOP'),
-      checkCrawlability(origin)
+      checkCrawlability(origin),
+      fetchContentVisibility(currentUrl)
     ]);
 
     const pageData = {
@@ -1312,12 +1488,21 @@ async function checkAIVisibility() {
       crawlData = crawlResponse.value;
     }
 
+    let visibilityData = null;
+    if (visibilityResponse.status === 'fulfilled') {
+      visibilityData = visibilityResponse.value || null;
+      renderContentVisibilityResults(visibilityData);
+    } else {
+      renderContentVisibilityResults(null);
+    }
+
     if (hasPageData || hasOriginData) {
       lastReportData = {
         generatedAt: new Date().toISOString(),
         pageData,
         originData,
-        crawlData
+        crawlData,
+        contentVisibility: visibilityData
       };
       setDownloadButtonEnabled(true);
     }

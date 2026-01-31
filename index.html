@@ -75,11 +75,16 @@
         </svg>
         <span class="logo-text">AI & LLM Visibility Validator</span>
       </div>
-      <div class="nav-links">
+      <button class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+      <div class="nav-links" id="nav-links">
         <a href="#features">Features</a>
         <a href="#how-it-works">How It Works</a>
         <a href="#about">About</a>
-        <a href="tool.html" class="cta-nav">Try Free Tool</a>
+        <a href="tool.html">Free Tool</a>
       </div>
     </div>
   </nav>
@@ -393,6 +398,25 @@
 
       // Redirect to tool page with URL parameter
       window.location.href = 'tool.html?url=' + encodeURIComponent(url);
+    }
+
+    const navToggle = document.querySelector('.nav-toggle');
+    const navLinks = document.getElementById('nav-links');
+
+    if (navToggle && navLinks) {
+      navToggle.addEventListener('click', () => {
+        const isOpen = navLinks.classList.toggle('open');
+        navToggle.setAttribute('aria-expanded', String(isOpen));
+      });
+
+      navLinks.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          if (navLinks.classList.contains('open')) {
+            navLinks.classList.remove('open');
+            navToggle.setAttribute('aria-expanded', 'false');
+          }
+        });
+      });
     }
   </script>
 

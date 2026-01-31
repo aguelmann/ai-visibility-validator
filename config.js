@@ -7,5 +7,9 @@ const CONFIG = {
   PROXY_URL: 'https://crux-api-proxy-658532897815.us-central1.run.app',
 
   // Same proxy URL used for robots.txt fetching (bypasses CORS)
-  ROBOTS_PROXY_URL: 'https://crux-api-proxy-658532897815.us-central1.run.app'
+  ROBOTS_PROXY_URL: 'https://crux-api-proxy-658532897815.us-central1.run.app',
+
+  // Content visibility (JS on/off) analysis via Cloud Run
+  // Example: 'https://content-visibility-xxxxx-uc.a.run.app'
+  CONTENT_VISIBILITY_URL: 'https://content-visibility-658532897815.us-central1.run.app'
 };
