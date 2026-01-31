@@ -449,6 +449,13 @@ function showError(message) {
   setDownloadButtonEnabled(false);
 }
 
+function showNotice(message) {
+  const noticeDiv = document.getElementById('error');
+  const noticeText = document.getElementById('error-text');
+  noticeText.textContent = message;
+  noticeDiv.classList.remove('hidden');
+}
+
 // Show results
 function showResults(pageData, originData) {
   const pageUrlDiv = document.getElementById('page-url');
@@ -1477,10 +1484,9 @@ async function checkAIVisibility() {
     const hasPageData = pageData.metrics.ttfb !== null || pageData.metrics.cls !== null || pageData.metrics.inp !== null;
     const hasOriginData = originData.metrics.ttfb !== null || originData.metrics.cls !== null || originData.metrics.inp !== null;
 
+    showResults(pageData, originData);
     if (!hasPageData && !hasOriginData) {
-      showError('No CrUX data available for this website. This typically means the site doesn\'t have enough traffic to be included in the Chrome UX Report. CrUX requires a minimum threshold of real-user visits.');
-    } else {
-      showResults(pageData, originData);
+      showNotice('No CrUX data available for this website. This typically means the site doesn\'t have enough traffic to be included in the Chrome UX Report. Content visibility and crawlability results are still shown.');
     }
 
     let crawlData = null;
@@ -1496,7 +1502,7 @@ async function checkAIVisibility() {
       renderContentVisibilityResults(null);
     }
 
-    if (hasPageData || hasOriginData) {
+    if (hasPageData || hasOriginData || crawlData || visibilityData) {
       lastReportData = {
         generatedAt: new Date().toISOString(),
         pageData,

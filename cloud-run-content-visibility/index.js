@@ -1,5 +1,6 @@
 const express = require('express');
 const { chromium } = require('playwright');
+const cheerio = require('cheerio');
 
 const app = express();
 app.use(express.json({ limit: '200kb' }));
@@ -12,6 +13,9 @@ const MAX_ELEMENTS = 4000;
 const MAX_TEXT_CHARS = 280;
 const MAX_LIST_ITEMS = 20;
 const MAX_EVALUATE_RETRIES = 2;
+const QUIET_WINDOW_MS = 1200;
+const STABLE_TIMEOUT_MS = 8000;
+const TOTAL_TIMEOUT_MS = 45000;
 
 const cache = new Map();
 
@@ -30,6 +34,35 @@ function setCache(key, value) {
     value,
     expiresAt: Date.now() + CACHE_TTL_MS
   });
+}
+
+function createRequestId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createLogger(requestId) {
+  return (message, extra) => {
+    const prefix = `[content-visibility:${requestId}]`;
+    if (extra !== undefined) {
+      console.log(prefix, message, extra);
+    } else {
+      console.log(prefix, message);
+    }
+  };
+}
+
+function withTimeout(promise, ms, label) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label || 'Operation'} timed out after ${ms}ms`));
+    }, ms);
+  });
+
+  return Promise.race([
+    promise.finally(() => clearTimeout(timeoutId)),
+    timeoutPromise
+  ]);
 }
 
 function allowOrigin(origin) {
@@ -70,6 +103,202 @@ function normalizeUrl(rawUrl) {
     if (!['http:', 'https:'].includes(url.protocol)) return null;
     return url.toString();
   } catch (error) {
+    return null;
+  }
+}
+
+function createPageState(label) {
+  return {
+    label,
+    lastNavAt: 0,
+    navigations: 0,
+    requestFailures: 0,
+    lastUrl: ''
+  };
+}
+
+function attachPageObservers(page, state, log) {
+  page.on('framenavigated', frame => {
+    if (frame === page.mainFrame()) {
+      state.navigations += 1;
+      state.lastNavAt = Date.now();
+      state.lastUrl = frame.url();
+      log(`[${state.label}] navigated (${state.navigations})`, state.lastUrl);
+    }
+  });
+
+  page.on('requestfailed', request => {
+    if (request.frame() === page.mainFrame()) {
+      state.requestFailures += 1;
+      const failure = request.failure();
+      log(`[${state.label}] request failed`, {
+        url: request.url(),
+        errorText: failure ? failure.errorText : 'unknown'
+      });
+    }
+  });
+
+  page.on('pageerror', error => {
+    log(`[${state.label}] pageerror`, error.message || String(error));
+  });
+}
+
+async function waitForQuietNavigation(state, quietMs, timeoutMs, log) {
+  const start = Date.now();
+  if (!state.lastNavAt) {
+    state.lastNavAt = Date.now();
+  }
+
+  while (Date.now() - start < timeoutMs) {
+    if (Date.now() - state.lastNavAt >= quietMs) {
+      return true;
+    }
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+
+  log(`[${state.label}] navigation did not settle within ${timeoutMs}ms`);
+  return false;
+}
+
+async function gotoAndStabilize(page, url, state, log) {
+  page.setDefaultNavigationTimeout(NAV_TIMEOUT_MS);
+  page.setDefaultTimeout(NAV_TIMEOUT_MS);
+  log(`[${state.label}] goto start`, url);
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS });
+  await page.waitForTimeout(WAIT_AFTER_LOAD_MS);
+  await waitForQuietNavigation(state, QUIET_WINDOW_MS, STABLE_TIMEOUT_MS, log);
+}
+
+function safePageUrl(page, fallbackUrl) {
+  try {
+    const current = page.url();
+    if (current) return current;
+  } catch (error) {
+    // Ignore.
+  }
+  return fallbackUrl || '';
+}
+
+function categorizeElement(tagName, className) {
+  if (!tagName) return 'static';
+  const lowerTag = tagName.toLowerCase();
+  const lowerClass = (className || '').toLowerCase();
+
+  if (lowerClass.includes('dynamic') || lowerClass.includes('loaded') ||
+      lowerClass.includes('ajax') || lowerClass.includes('async')) {
+    return 'dynamic-content';
+  }
+
+  if (['nav', 'header', 'footer', 'aside'].includes(lowerTag)) {
+    return 'navigation';
+  }
+
+  if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(lowerTag)) {
+    return 'heading';
+  }
+
+  if (lowerTag === 'p') {
+    return 'paragraph';
+  }
+
+  if (['button', 'input', 'select', 'textarea'].includes(lowerTag)) {
+    return 'interactive';
+  }
+
+  return 'static';
+}
+
+function buildEmptyAnalysis(url) {
+  return {
+    elements: [],
+    totalWords: 0,
+    url: url || '',
+    timestamp: new Date().toISOString()
+  };
+}
+
+function extractContentFromHtml(html, url) {
+  const analysis = buildEmptyAnalysis(url);
+  if (!html) return analysis;
+
+  const $ = cheerio.load(html);
+  const body = $('body')[0];
+  if (!body) return analysis;
+
+  const walk = (node) => {
+    if (!node || analysis.elements.length >= MAX_ELEMENTS) return;
+
+    if (node.type === 'text') {
+      const rawText = (node.data || '').trim();
+      if (!rawText) return;
+      const parent = node.parent;
+      const tagName = parent && parent.name ? parent.name.toLowerCase() : 'text';
+      if (['script', 'style', 'noscript'].includes(tagName)) {
+        return;
+      }
+      const className = parent && parent.attribs ? parent.attribs.class || '' : '';
+      const id = parent && parent.attribs ? parent.attribs.id || '' : '';
+      const styleAttr = parent && parent.attribs ? (parent.attribs.style || '').toLowerCase() : '';
+      const isVisible = !(styleAttr.includes('display:none') || styleAttr.includes('visibility:hidden'));
+      const words = rawText.split(/\s+/).filter(Boolean);
+      const wordCount = words.length;
+      if (!wordCount) return;
+      const text = rawText.length > MAX_TEXT_CHARS ? `${rawText.substring(0, MAX_TEXT_CHARS)}...` : rawText;
+      const category = categorizeElement(tagName, className);
+
+      analysis.elements.push({
+        text,
+        wordCount,
+        isVisible,
+        category,
+        tagName,
+        className,
+        id
+      });
+
+      if (isVisible) {
+        analysis.totalWords += wordCount;
+      }
+
+      return;
+    }
+
+    if (node.type === 'script' || node.type === 'style' || node.type === 'comment') {
+      return;
+    }
+
+    if (node.children && node.children.length) {
+      node.children.forEach(child => walk(child));
+    }
+  };
+
+  walk(body);
+  return analysis;
+}
+
+async function getHtmlSnapshot(page, label, log, fallbackUrl) {
+  try {
+    return await page.content();
+  } catch (error) {
+    log(`[${label}] page.content failed`, error.message || String(error));
+  }
+
+  const url = safePageUrl(page, fallbackUrl);
+  if (!url) return null;
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; ContentVisibilityBot/1.0)'
+      }
+    });
+    if (!response.ok) {
+      log(`[${label}] fallback fetch failed`, response.status);
+      return null;
+    }
+    return await response.text();
+  } catch (error) {
+    log(`[${label}] fallback fetch error`, error.message || String(error));
     return null;
   }
 }
@@ -245,10 +474,30 @@ async function extractContentWithRetry(page) {
   throw lastError;
 }
 
-async function analyzeUrl(url) {
+async function extractContentSafe(page, options) {
+  const { label, log, warnings, fallbackUrl } = options;
+  try {
+    return await extractContentWithRetry(page);
+  } catch (error) {
+    log(`[${label}] live DOM extraction failed, falling back`, error.message || String(error));
+    warnings.push(`[${label}] Live DOM extraction failed; used HTML snapshot fallback.`);
+  }
+
+  const snapshot = await getHtmlSnapshot(page, label, log, fallbackUrl);
+  if (snapshot) {
+    return extractContentFromHtml(snapshot, fallbackUrl || safePageUrl(page, fallbackUrl));
+  }
+
+  warnings.push(`[${label}] HTML snapshot fallback failed; returning empty analysis.`);
+  return buildEmptyAnalysis(fallbackUrl || safePageUrl(page, fallbackUrl));
+}
+
+async function analyzeUrl(url, log) {
   const browser = await chromium.launch({
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
+
+  const warnings = [];
 
   try {
     const enabledContext = await browser.newContext();
@@ -257,14 +506,28 @@ async function analyzeUrl(url) {
     const enabledPage = await enabledContext.newPage();
     const disabledPage = await disabledContext.newPage();
 
-    await enabledPage.goto(url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS });
-    await enabledPage.waitForTimeout(WAIT_AFTER_LOAD_MS);
+    const enabledState = createPageState('js-enabled');
+    const disabledState = createPageState('js-disabled');
 
-    await disabledPage.goto(url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS });
-    await disabledPage.waitForTimeout(WAIT_AFTER_LOAD_MS);
+    attachPageObservers(enabledPage, enabledState, log);
+    attachPageObservers(disabledPage, disabledState, log);
 
-    const jsEnabled = await extractContentWithRetry(enabledPage);
-    const jsDisabled = await extractContentWithRetry(disabledPage);
+    await gotoAndStabilize(enabledPage, url, enabledState, log);
+    await gotoAndStabilize(disabledPage, url, disabledState, log);
+
+    const jsEnabled = await extractContentSafe(enabledPage, {
+      label: 'js-enabled',
+      log,
+      warnings,
+      fallbackUrl: url
+    });
+
+    const jsDisabled = await extractContentSafe(disabledPage, {
+      label: 'js-disabled',
+      log,
+      warnings,
+      fallbackUrl: url
+    });
 
     const diff = compareContent(jsEnabled, jsDisabled);
     const enabledWords = jsEnabled.totalWords || 0;
@@ -283,7 +546,8 @@ async function analyzeUrl(url) {
         disabledWords,
         difference,
         hiddenPercent: Number(hiddenPercent.toFixed(1))
-      }
+      },
+      warnings
     };
   } finally {
     await browser.close();
@@ -291,6 +555,9 @@ async function analyzeUrl(url) {
 }
 
 app.post('/analyze', async (req, res) => {
+  const requestId = createRequestId();
+  const log = createLogger(requestId);
+  const startedAt = Date.now();
   const url = normalizeUrl(req.body?.url || '');
 
   if (!url) {
@@ -298,26 +565,38 @@ app.post('/analyze', async (req, res) => {
     return;
   }
 
+  log('analyze request', { url });
+
   const cacheKey = url;
   const cached = getCache(cacheKey);
   if (cached) {
-    res.json({ ...cached, cached: true });
+    log('cache hit');
+    res.json({ ...cached, cached: true, requestId });
     return;
   }
 
   try {
-    const result = await analyzeUrl(url);
+    const result = await withTimeout(analyzeUrl(url, log), TOTAL_TIMEOUT_MS, 'Analyze');
     const payload = {
       success: true,
       url,
       generatedAt: new Date().toISOString(),
       cached: false,
+      requestId,
+      timings: {
+        totalMs: Date.now() - startedAt
+      },
       ...result
     };
     setCache(cacheKey, payload);
     res.json(payload);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message || 'Analysis failed.' });
+    log('analysis failed', error.message || String(error));
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Analysis failed.',
+      requestId
+    });
   }
 });
 

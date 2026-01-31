@@ -18,7 +18,12 @@ Folder: `cloud-run-content-visibility/`
   - CORS allowlist for tool domain(s)
   - 10‑minute in‑memory cache
   - Timeouts: 20s navigation + 2s post-load wait
-- `package.json`: `express` + `playwright`
+  - Stabilization + fallback:
+    - Waits for quiet navigation window before extracting
+    - Retries DOM extraction on transient navigation errors
+    - Falls back to HTML snapshot parsing when live DOM evaluation fails
+    - Returns `warnings` + `requestId` for debugging instead of failing hard
+- `package.json`: `express` + `playwright` + `cheerio` (HTML fallback parsing)
 - `Dockerfile`: Playwright base image
 - `README.md`: basic deploy notes
 
